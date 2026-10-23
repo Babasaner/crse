@@ -1,0 +1,301 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap");
+
+/* Aeonik — police commerciale, fallback gracieux vers Inter */
+@font-face {
+  font-family: "Aeonik";
+  src: local("Aeonik"), local("Inter");
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  .all-unset {
+    all: unset;
+  }
+}
+
+:root {
+  --alabaster: rgba(249, 249, 249, 1);
+  --alto: rgba(214, 214, 214, 1);
+  --black: rgba(0, 0, 0, 1);
+  --calypso: rgba(40, 95, 132, 1);
+  --catskill-white: rgba(241, 245, 249, 1);
+  --chathams-blue: rgba(27, 62, 128, 1);
+  --dove-gray: rgba(100, 98, 98, 1);
+  --emperor: rgba(85, 85, 85, 1);
+  --firefly: rgba(17, 39, 54, 1);
+  --gray: rgba(128, 124, 124, 1);
+  /* Polices Inter (chargée) — noms de variables conservés pour compatibilité */
+  --inter-bold-font-family: "Inter", "Manrope", "Avenir Next", sans-serif;
+  --inter-bold-font-size: 26px;
+  --inter-bold-font-style: normal;
+  --inter-bold-font-weight: 700;
+  --inter-bold-letter-spacing: -0.01em;
+  --inter-bold-line-height: 1.25;
+  --inter-medium-font-family: "Inter", "Manrope", "Avenir Next", sans-serif;
+  --inter-medium-font-size: 14px;
+  --inter-medium-font-style: normal;
+  --inter-medium-font-weight: 500;
+  --inter-medium-letter-spacing: 0px;
+  --inter-medium-line-height: 1.5;
+  --inter-regular-font-family: "Inter", "Manrope", "Avenir Next", sans-serif;
+  --inter-regular-font-size: 16px;
+  --inter-regular-font-style: normal;
+  --inter-regular-font-weight: 400;
+  --inter-regular-letter-spacing: 0px;
+  --inter-regular-line-height: 1.6;
+  --inter-regular-underline-font-family: "Inter", "Manrope", "Avenir Next", sans-serif;
+  --inter-regular-underline-font-size: 14px;
+  --inter-regular-underline-font-style: normal;
+  --inter-regular-underline-font-weight: 400;
+  --inter-regular-underline-letter-spacing: 0px;
+  --inter-regular-underline-line-height: 1.5;
+  --inter-semi-bold-font-family: "Inter", "Manrope", "Avenir Next", sans-serif;
+  --inter-semi-bold-font-size: 18px;
+  --inter-semi-bold-font-style: normal;
+  --inter-semi-bold-font-weight: 600;
+  --inter-semi-bold-letter-spacing: 0px;
+  --inter-semi-bold-line-height: 1.5;
+  --mercury: rgba(229, 229, 229, 1);
+  --rolling-stone: rgba(118, 121, 124, 1);
+  --semantic-button-font-family: "Inter", "Manrope", "Avenir Next", sans-serif;
+  --semantic-button-font-size: 16px;
+  --semantic-button-font-style: normal;
+  --semantic-button-font-weight: 500;
+  --semantic-button-letter-spacing: 0px;
+  --semantic-button-line-height: 1.4;
+  --semantic-heading-1-font-family: "Inter", "Manrope", "Avenir Next", sans-serif;
+  --semantic-heading-1-font-size: 22px;
+  --semantic-heading-1-font-style: normal;
+  --semantic-heading-1-font-weight: 400;
+  --semantic-heading-1-letter-spacing: 0px;
+  --semantic-heading-1-line-height: 1.5;
+  --semantic-heading-2-font-family: "Inter", "Manrope", "Avenir Next", sans-serif;
+  --semantic-heading-2-font-size: 17px;
+  --semantic-heading-2-font-style: normal;
+  --semantic-heading-2-font-weight: 400;
+  --semantic-heading-2-letter-spacing: 0px;
+  --semantic-heading-2-line-height: 1.5;
+  --semantic-heading-h1-font-family: "Inter", "Manrope", "Avenir Next", sans-serif;
+  --semantic-heading-h1-font-size: 32px;
+  --semantic-heading-h1-font-style: normal;
+  --semantic-heading-h1-font-weight: 700;
+  --semantic-heading-h1-letter-spacing: -0.02em;
+  --semantic-heading-h1-line-height: 1.15;
+  --semantic-input-font-family: "Inter", "Manrope", "Avenir Next", sans-serif;
+  --semantic-input-font-size: 16px;
+  --semantic-input-font-style: normal;
+  --semantic-input-font-weight: 400;
+  --semantic-input-letter-spacing: 0px;
+  --semantic-input-line-height: normal;
+  --semantic-item-font-family: "Inter", "Manrope", "Avenir Next", sans-serif;
+  --semantic-item-font-size: 16px;
+  --semantic-item-font-style: normal;
+  --semantic-item-font-weight: 400;
+  --semantic-item-letter-spacing: 0px;
+  --semantic-item-line-height: 1.6;
+  --semantic-link-font-family: "Inter", "Manrope", "Avenir Next", sans-serif;
+  --semantic-link-font-size: 14px;
+  --semantic-link-font-style: normal;
+  --semantic-link-font-weight: 500;
+  --semantic-link-letter-spacing: 0px;
+  --semantic-link-line-height: 1.5;
+  --shakespeare: rgba(85, 174, 208, 1);
+  --silver-chalice: rgba(169, 163, 163, 1);
+  --swiss-coffee: rgba(214, 214, 214, 1);
+  --white: rgba(255, 255, 255, 1);
+  /* Police Aeonik (ou Inter si non disponible) */
+  --aeonik-font-family: "Aeonik", "Inter", "Manrope", sans-serif;
+}
+
+:root {
+  --animate-spin: spin 1s linear infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 1s var(--animation-delay, 0s) ease forwards;
+}
+
+.animate-fade-up {
+  animation: fade-up 1s var(--animation-delay, 0s) ease forwards;
+}
+
+.animate-marquee {
+  animation: marquee var(--duration) infinite linear;
+}
+
+.animate-marquee-vertical {
+  animation: marquee-vertical var(--duration) linear infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 8s infinite;
+}
+
+.animate-spin {
+  animation: var(--animate-spin);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes image-glow {
+  0% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.74, 0.25, 0.76, 1);
+  }
+
+  10% {
+    opacity: 0.7;
+    animation-timing-function: cubic-bezier(0.12, 0.01, 0.08, 0.99);
+  }
+
+  to {
+    opacity: 0.4;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  0%,
+  90%,
+  to {
+    background-position: calc(-100% - var(--shimmer-width)) 0;
+  }
+
+  30%,
+  60% {
+    background-position: calc(100% + var(--shimmer-width)) 0;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translate(0);
+  }
+
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes marquee-vertical {
+  0% {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+  }
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+
+    --card: transparent;
+    --card-foreground: 222.2 47.4% 11.2%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 210 40% 98%;
+
+    --ring: 215 20.2% 65.1%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+
+    --muted: 223 47% 11%;
+    --muted-foreground: 215.4 16.3% 56.9%;
+
+    --accent: 216 34% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 215 20.2% 65.1%;
+
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+
+    --card: transparent;
+    --card-foreground: 213 31% 91%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 1.2%;
+
+    --secondary: 222.2 47.4% 11.2%;
+    --secondary-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --ring: 216 34% 17%;
+
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
+}
