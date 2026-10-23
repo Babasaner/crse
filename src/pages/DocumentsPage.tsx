@@ -10,6 +10,7 @@ import {
   BarChart3,
   ClipboardList,
   Eye,
+  Download,
   X,
   ExternalLink,
   Filter,
@@ -384,7 +385,7 @@ export function DocumentsPage() {
 
   const filteredDocs = wpDocumentItems.filter((doc) => {
     const matchesCat = activeCategories.length === 0 || activeCategories.includes(doc.category)
-    const matchesSector = activeSectors.length === 0 || (doc.sector !== null && activeSectors.includes(doc.sector))
+    const matchesSector = activeSectors.length === 0 || (doc.sector != null && activeSectors.includes(doc.sector))
     const matchesYear = activeYear === 'all' || doc.date.slice(-4) === activeYear
     const q = search.toLowerCase().trim()
     const matchesSearch =
