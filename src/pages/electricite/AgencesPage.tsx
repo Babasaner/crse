@@ -1,14 +1,5 @@
 import { Link } from 'react-router-dom'
-import {
-  Building2,
-  ExternalLink,
-  ArrowLeft,
-  SunMedium,
-  Gauge,
-  Zap,
-  CheckCircle2,
-  FileText
-} from 'lucide-react'
+import { ExternalLink, ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { PageBanner } from '../../components/shared/PageBanner'
 import { Button } from '../../components/ui/button'
 

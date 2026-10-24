@@ -1,15 +1,8 @@
 import { Link } from 'react-router-dom'
 import {
   Zap,
-  Building2,
-  FileText,
   ArrowLeft,
-  CheckCircle2,
-  Scale,
   Factory,
-  Sun,
-  ShieldAlert,
-  ArrowRight
 } from 'lucide-react'
 import { PageBanner } from '../../components/shared/PageBanner'
 import { Button } from '../../components/ui/button'

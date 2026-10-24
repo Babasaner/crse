@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRight, ChevronRight, FileText, Search } from 'lucide-react'
+import { ArrowRight, FileText, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { PageBanner } from '../components/shared/PageBanner'
 import { NewsHighlightsSection } from './Accueil/sections/NewsHighlightsSection/NewsHighlightsSection'

@@ -3,11 +3,7 @@ import {
   Zap,
   Sun,
   Battery,
-  Building2,
   ArrowLeft,
-  CheckCircle2,
-  Layers,
-  ShieldCheck,
   Radio
 } from 'lucide-react'
 import { PageBanner } from '../../components/shared/PageBanner'

@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import { useState } from 'react'
-import { ArrowLeft, CalendarDays, Check, LoaderCircle, Share2 } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Check, ChevronRight, LoaderCircle, Share2 } from 'lucide-react'
 import { useWPPost, useWPPosts } from '../hooks/useWordPress'
 import { formatWPDate, getPostCategories, getPostImage, stripHtml } from '../lib/wordpress'
 import { Button } from '../components/ui/button'

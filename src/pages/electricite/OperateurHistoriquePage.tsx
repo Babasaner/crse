@@ -2,10 +2,8 @@ import { Link } from 'react-router-dom'
 import {
   Zap,
   Building,
-  ShieldCheck,
   ExternalLink,
   ArrowLeft,
-  Activity,
   Layers,
   Radio,
   Users

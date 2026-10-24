@@ -6,8 +6,6 @@ import {
   Users,
   Building,
   Briefcase,
-  Zap,
-  Flame,
   Scale,
   CheckCircle2,
   ArrowRight

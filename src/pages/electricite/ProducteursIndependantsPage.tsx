@@ -5,11 +5,7 @@ import {
   Wind,
   Flame,
   BatteryCharging,
-  Building2,
-  FileCheck,
   ArrowLeft,
-  CheckCircle2,
-  ExternalLink
 } from 'lucide-react'
 import { PageBanner } from '../../components/shared/PageBanner'
 import { Button } from '../../components/ui/button'
