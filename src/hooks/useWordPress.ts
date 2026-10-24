@@ -1,7 +1,20 @@
 import { useState, useEffect } from 'react'
-import { buildPostsUrl, fetchCategories } from '../lib/wordpress'
-import type { WPPost, WPCategory } from '../lib/wordpress'
-import type { WPDocument } from '../lib/wordpress'
+import {
+  buildPostsUrl,
+  fetchCategories,
+  fetchWPAgenda,
+  fetchWPAgendaEvent,
+  fetchWPDocumentCatalog,
+  fetchWPDocumentPage,
+} from '../lib/wordpress'
+import type {
+  WPAgendaItem,
+  WPDocument,
+  WPDocumentCatalog,
+  WPDocumentFilters,
+  WPPost,
+  WPCategory,
+} from '../lib/wordpress'
 import { fetchWPDocuments } from '../lib/wordpress'
 
 interface UseWPPostsOptions {
@@ -138,4 +151,127 @@ export function useWPDocuments(): {
   }, [])
 
   return { documents, loading, error }
+}
+
+export function useWPDocumentCatalog(): {
+  catalog: WPDocumentCatalog | null
+  loading: boolean
+  error: string | null
+} {
+  const [catalog, setCatalog] = useState<WPDocumentCatalog | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchWPDocumentCatalog()
+      .then((data) => { if (!cancelled) setCatalog(data) })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Erreur de chargement des catégories')
+      })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [])
+
+  return { catalog, loading, error }
+}
+
+export function useWPDocumentPage(filters: WPDocumentFilters): {
+  documents: WPDocument[]
+  total: number
+  totalPages: number
+  loading: boolean
+  error: string | null
+} {
+  const filtersKey = JSON.stringify(filters)
+  const [result, setResult] = useState<{
+    key: string
+    documents: WPDocument[]
+    total: number
+    totalPages: number
+    error: string | null
+  } | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const requestFilters = JSON.parse(filtersKey) as WPDocumentFilters
+    fetchWPDocumentPage(requestFilters)
+      .then((data) => {
+        if (!cancelled) setResult({ key: filtersKey, ...data, error: null })
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setResult({
+          key: filtersKey,
+          documents: [],
+          total: 0,
+          totalPages: 1,
+          error: err instanceof Error ? err.message : 'Erreur de chargement des documents',
+        })
+      })
+    return () => { cancelled = true }
+  }, [filtersKey])
+
+  if (result?.key !== filtersKey) {
+    return { documents: [], total: 0, totalPages: 1, loading: true, error: null }
+  }
+
+  return {
+    documents: result.documents,
+    total: result.total,
+    totalPages: result.totalPages,
+    loading: false,
+    error: result.error,
+  }
+}
+
+export function useWPAgenda(): {
+  events: WPAgendaItem[]
+  loading: boolean
+  error: string | null
+} {
+  const [events, setEvents] = useState<WPAgendaItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchWPAgenda()
+      .then((data) => { if (!cancelled) setEvents(data) })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Erreur de chargement de l’agenda')
+      })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [])
+
+  return { events, loading, error }
+}
+
+export function useWPAgendaEvent(slug: string): {
+  event: WPAgendaItem | null
+  loading: boolean
+  error: string | null
+} {
+  const [result, setResult] = useState<{
+    slug: string
+    event: WPAgendaItem | null
+    error: string | null
+  } | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchWPAgendaEvent(slug)
+      .then((item) => { if (!cancelled) setResult({ slug, event: item, error: null }) })
+      .catch((err: unknown) => {
+        if (!cancelled) setResult({
+          slug,
+          event: null,
+          error: err instanceof Error ? err.message : 'Erreur de chargement de l’événement',
+        })
+      })
+    return () => { cancelled = true }
+  }, [slug])
+
+  if (result?.slug !== slug) return { event: null, loading: true, error: null }
+  return { event: result.event, loading: false, error: result.error }
 }

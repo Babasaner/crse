@@ -117,11 +117,26 @@
 }
 
 .animate-fade-in {
-  animation: fade-in 1s var(--animation-delay, 0s) ease forwards;
+  animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) var(--animation-delay, 0s) forwards;
 }
 
 .animate-fade-up {
-  animation: fade-up 1s var(--animation-delay, 0s) ease forwards;
+  animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) var(--animation-delay, 0s) forwards;
+}
+
+.animate-page-enter {
+  animation: page-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes page-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-marquee {

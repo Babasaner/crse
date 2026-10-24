@@ -1,737 +1,367 @@
-import { useState, useEffect } from 'react'
+import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-  Search,
-  FileText,
-  FileSpreadsheet,
+  ArrowLeft,
   BookOpen,
-  Gavel,
-  Newspaper,
-  BarChart3,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
-  Eye,
   Download,
-  X,
   ExternalLink,
-  Filter,
-  CalendarDays,
-  LoaderCircle
+  Eye,
+  FileSpreadsheet,
+  FileText,
+  Gavel,
+  LoaderCircle,
+  Newspaper,
+  Search,
+  X,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { PageBanner } from '../components/shared/PageBanner'
 import { Button } from '../components/ui/button'
-import { useWPDocuments } from '../hooks/useWordPress'
-import { getWPDocumentCategory, getWPDocumentSector, stripHtml } from '../lib/wordpress'
-import type { DocumentCategoryId, SectorId } from '../lib/wordpress'
+import { useWPDocumentCatalog, useWPDocumentPage } from '../hooks/useWordPress'
+import { formatWPDate, stripHtml } from '../lib/wordpress'
+import type { WPDocument, WPDocumentTerm } from '../lib/wordpress'
 
-type MainCategory = {
+type CategoryGroup = {
   id: string
   label: string
-  icon: React.ElementType
+  icon: LucideIcon
   color: string
-  subcategories: { id: string; label: string }[]
+  slugs: string[]
 }
 
-const mainCategories: MainCategory[] = [
-  {
-    id: 'all',
-    label: 'Tous les documents',
-    icon: FileText,
-    color: '#1b3e80',
-    subcategories: [],
-  },
-  {
-    id: 'textes',
-    label: 'Textes législatifs & réglementaires',
-    icon: Gavel,
-    color: '#1b3e80',
-    subcategories: [
-      { id: 'lois', label: 'Lois & Codes' },
-      { id: 'decrets', label: 'Décrets d’application' },
-      { id: 'arretes', label: 'Arrêtés ministériels' },
-    ],
-  },
-  {
-    id: 'decisions',
-    label: 'Décisions',
-    icon: ClipboardList,
-    color: '#55aed0',
-    subcategories: [],
-  },
-  {
-    id: 'avis',
-    label: 'Avis',
-    icon: ClipboardList,
-    color: '#55aed0',
-    subcategories: [],
-  },
-  {
-    id: 'grilles',
-    label: 'Grilles tarifaires',
-    icon: FileSpreadsheet,
-    color: '#e38d19',
-    subcategories: [
-      { id: 'electricite-bt', label: 'Électricité Basse Tension' },
-      { id: 'electricite-mt-ht', label: 'Électricité MT & HT' },
-      { id: 'gaz-distribution', label: 'Distribution Gazière' },
-    ],
-  },
-  {
-    id: 'hydrocarbures',
-    label: 'Structures des prix des hydrocarbures',
-    icon: BarChart3,
-    color: '#da6830',
-    subcategories: [
-      { id: 'mensuel-2025', label: 'Année 2025' },
-      { id: 'mensuel-2024', label: 'Année 2024' },
-      { id: 'baremes', label: 'Barèmes officiels' },
-    ],
-  },
-  {
-    id: 'bulletins',
-    label: 'Bulletin officiel de la CRSE',
-    icon: Newspaper,
-    color: '#1b3e80',
-    subcategories: [
-      { id: 'bo-2024', label: 'Éditions 2024' },
-      { id: 'bo-2023', label: 'Éditions 2023' },
-    ],
-  },
-  {
-    id: 'consultations',
-    label: 'Documents de consultation publique',
-    icon: BookOpen,
-    color: '#55aed0',
-    subcategories: [
-      { id: 'en-cours', label: 'En cours' },
-      { id: 'archives-consultations', label: 'Clôturées' },
-    ],
-  },
-  {
-    id: 'rapports',
-    label: 'Rapports et études',
-    icon: FileText,
-    color: '#1b3e80',
-    subcategories: [
-      { id: 'rapports-annuels', label: 'Rapports d’activité' },
-      { id: 'etudes-sectorielles', label: 'Études sectorielles' },
-    ],
-  },
+const categoryGroups: CategoryGroup[] = [
+  { id: 'textes', label: 'Textes législatifs et réglementaires', icon: Gavel, color: '#1b3e80', slugs: ['lois', 'decrets', 'arretes', 'reglements-dapplication-et-reglements'] },
+  { id: 'decisions-avis', label: 'Décisions et avis', icon: ClipboardList, color: '#55aed0', slugs: ['decisions', 'avis'] },
+  { id: 'grilles', label: 'Grilles tarifaires', icon: FileSpreadsheet, color: '#e38d19', slugs: ['grilles-tarifaires'] },
+  { id: 'hydrocarbures', label: 'Structures des prix des hydrocarbures', icon: FileSpreadsheet, color: '#da6830', slugs: ['structures-des-prix-des-hydrocarbures'] },
+  { id: 'bulletins', label: 'Bulletins officiels', icon: Newspaper, color: '#1b3e80', slugs: ['bulletins-officiels'] },
+  { id: 'consultations', label: 'Consultations publiques', icon: BookOpen, color: '#55aed0', slugs: ['documents-de-consultation-publique'] },
+  { id: 'rapports', label: 'Rapports et études', icon: FileText, color: '#1b3e80', slugs: ['rapports'] },
+  { id: 'autres', label: 'Autres publications', icon: FileText, color: '#64748b', slugs: [] },
 ]
 
-export type DocItem = {
-  id: number
-  title: string
-  subtitle: string
-  category: string
-  subcategory: string
-  date: string
-  fileSize: string
-  format: string
-  previewText: string
-  downloadUrl: string
-  sourceUrl?: string
-  sector?: SectorId | null
+const sectorAliases: Record<string, string> = {
+  gaz: 'intermediaire-aval-gazier',
+  'aval-gazier': 'intermediaire-aval-gazier',
 }
 
-export const documentsDatabase: DocItem[] = [
-  {
-    id: 1,
-    title: 'Loi n° 2021-32 du 09 juillet 2021 portant création de la CRSE',
-    subtitle: 'Texte de loi fondateur élargissant les compétences de régulation à l’électricité, au gaz et à l’aval des hydrocarbures.',
-    category: 'textes',
-    subcategory: 'lois',
-    date: '09/07/2021',
-    fileSize: '1.4 Mo',
-    format: 'PDF',
-    previewText: `REPUBLIQUE DU SENEGAL - Un Peuple - Un But - Une Foi\nLOI n° 2021-32 du 09 juillet 2021 portant création, organisation et fonctionnement de la Commission de Régulation du Secteur de l’Énergie (CRSE).\n\nArticle premier. - Il est créé une autorité administrative indépendante dénommée « Commission de Régulation du Secteur de l’Énergie », en abrégé CRSE.\nArticle 2. - La CRSE est dotée de la personnalité juridique et de l'autonomie financière et de gestion. Son siège est fixé à Dakar.\nArticle 3. - La Commission a pour mission principale de veiller au bon fonctionnement des marchés de l'électricité, du gaz naturel et des hydrocarbures, et de protéger les intérêts des consommateurs et des opérateurs.`,
-    downloadUrl: '#',
-  },
-  {
-    id: 2,
-    title: 'Décret n° 2022-1185 portant organisation de la CRSE',
-    subtitle: 'Modalités d’application de la loi n° 2021-32 relatives à l’organisation interne et aux délégations.',
-    category: 'textes',
-    subcategory: 'decrets',
-    date: '12/04/2022',
-    fileSize: '890 Ko',
-    format: 'PDF',
-    previewText: `DECRET N° 2022-1185 fixant les règles de gouvernance, la composition des collèges de régulation et les directions opérationnelles de la Commission de Régulation du Secteur de l’Énergie.`,
-    downloadUrl: '#',
-  },
-  {
-    id: 3,
-    title: "Code de l'Électricité — Loi n° 2021-31 du 09 juillet 2021",
-    subtitle: 'Nouveau cadre légal régissant les activités de production, de transport, de distribution et de vente d’électricité.',
-    category: 'textes',
-    subcategory: 'lois',
-    date: '09/07/2021',
-    fileSize: '3.2 Mo',
-    format: 'PDF',
-    previewText: `LOI N° 2021-31 portant Code de l'Électricité au Sénégal.\nCette loi abroge la loi n° 98-29 du 14 avril 1998 et introduit l'ouverture régulée du marché, la promotion des énergies renouvelables et les nouveaux droits des usagers de l'électricité.`,
-    downloadUrl: '#',
-  },
-  {
-    id: 4,
-    title: 'Délibération n° 2024-001 — Fixation des grilles tarifaires de l’électricité',
-    subtitle: 'Décision tarifaire pour la période 2024-2026 applicable aux usagers basse, moyenne et haute tension.',
-    category: 'decisions',
-    subcategory: 'deliberations',
-    date: '15/01/2024',
-    fileSize: '650 Ko',
-    format: 'PDF',
-    previewText: `DELIBERATION N° 2024-001 / CRSE portant révision périodique des tarifs de vente d'électricité au titre de l'année 2024.\nVu la loi n° 2021-32 portant création de la CRSE ;\nVu le contrat de concession conclu avec la Senelec ;\nLa Commission réunie en séance plénière décide des barèmes applicables à compter du 1er février 2024.`,
-    downloadUrl: '#',
-  },
-  {
-    id: 5,
-    title: 'Avis consultatif n° 2024-003 sur la péréquation tarifaire nationale',
-    subtitle: 'Avis rendu au Ministère chargé de l’Énergie relatif au mécanisme de soutien aux zones rurales.',
-    category: 'decisions',
-    subcategory: 'avis-consultatifs',
-    date: '10/05/2024',
-    fileSize: '420 Ko',
-    format: 'PDF',
-    previewText: `AVIS DE LA CRSE relatif à l'harmonisation des tarifs entre les concessions rurales d'électrification et le réseau interconnecté national.`,
-    downloadUrl: '#',
-  },
-  {
-    id: 6,
-    title: 'Grilles tarifaires d’électricité Basse Tension (BT) — Usage Domestique',
-    subtitle: 'Barème détaillé des tranches sociales, ordinaires et du système prépayé Woyofal.',
-    category: 'grilles',
-    subcategory: 'electricite-bt',
-    date: '01/01/2024',
-    fileSize: '510 Ko',
-    format: 'PDF',
-    previewText: `GRILLES TARIFAIRES BASSE TENSION\nTranche 1 (0 à 150 kWh) : 91,17 FCFA / kWh HT\nTranche 2 (151 à 250 kWh) : 136,49 FCFA / kWh HT\nTranche 3 (> 250 kWh) : 149,03 FCFA / kWh HT\nBarème appliqué au prépaiement et post-paiement.`,
-    downloadUrl: '#',
-  },
-  {
-    id: 7,
-    title: 'Grilles tarifaires Moyenne & Haute Tension (MT/HT) Industriels',
-    subtitle: 'Tarifs horosaisonniers pour les professionnels, industries et gros consommateurs d’énergie.',
-    category: 'grilles',
-    subcategory: 'electricite-mt-ht',
-    date: '01/01/2024',
-    fileSize: '780 Ko',
-    format: 'PDF',
-    previewText: `TARIFS PROFESSIONNELS & INDUSTRIELS (MT & HT)\nHeures pleines, heures de pointe, heures creuses et redevance de puissance souscrite.`,
-    downloadUrl: '#',
-  },
-  {
-    id: 8,
-    title: 'Structure officielle des prix des hydrocarbures — Février 2025',
-    subtitle: 'Décomposition du prix au litre : Super, Gasoil, Pétrole lampant, Gaz butane.',
-    category: 'hydrocarbures',
-    subcategory: 'mensuel-2025',
-    date: '01/02/2025',
-    fileSize: '950 Ko',
-    format: 'PDF',
-    previewText: `STRUCTURE DES PRIX DES PRODUITS PETROLIERS (Arrêté interministériel)\nSupercarburant : 990 FCFA/L\nGasoil ordinaire : 755 FCFA/L\nGaz butane bouteille 6kg : 2 885 FCFA\nGaz butane bouteille 12,5kg : 6 000 FCFA\nDétail des composantes : Prix CAF, droits de douane, péréquation transport, marge distributeur.`,
-    downloadUrl: '#',
-  },
-  {
-    id: 9,
-    title: 'Structure officielle des prix des hydrocarbures — Janvier 2025',
-    subtitle: 'Barème et composantes fiscales et parafiscales des produits pétroliers.',
-    category: 'hydrocarbures',
-    subcategory: 'mensuel-2025',
-    date: '01/01/2025',
-    fileSize: '920 Ko',
-    format: 'PDF',
-    previewText: `STRUCTURE OFFICIELLE DES PRIX - JANVIER 2025\nRelevé mensuel publié conformément aux dispositions régulatoires du secteur aval des hydrocarbures.`,
-    downloadUrl: '#',
-  },
-  {
-    id: 10,
-    title: 'Bulletin Officiel de la CRSE — N° 12 (4e Trimestre 2024)',
-    subtitle: 'Recueil exhaustif des décisions, délibérations et avis adoptés au dernier trimestre 2024.',
-    category: 'bulletins',
-    subcategory: 'bo-2024',
-    date: '31/12/2024',
-    fileSize: '4.8 Mo',
-    format: 'PDF',
-    previewText: `BULLETIN OFFICIEL DE LA REGULATION DE L’ENERGIE\nÉdition n° 12 - Trimestre 4 / Année 2024\nSommaire :\n1. Actes réglementaires du collège\n2. Décisions de tarification gazière\n3. Synthèse des litiges examinés par le comité de règlement des différends\n4. Statistiques trimestrielles de production.`,
-    downloadUrl: '#',
-  },
-  {
-    id: 11,
-    title: 'Document de Consultation Publique : Régulation du réseau de transport gazier (RAG)',
-    subtitle: 'Document soumis à consultation auprès des opérateurs et des partenaires pour l’accès des tiers.',
-    category: 'consultations',
-    subcategory: 'en-cours',
-    date: '15/01/2025',
-    fileSize: '2.1 Mo',
-    format: 'PDF',
-    previewText: `CONSULTATION PUBLIQUE RELATIVE AU CODE DE RESEAU GAZIER DU SENEGAL\nLa CRSE invite les acteurs industriels, associations de consommateurs et bailleurs à soumettre leurs observations avant le 31 mars 2025 sur les principes directeurs de tarification du gazoduc national.`,
-    downloadUrl: '#',
-  },
-  {
-    id: 12,
-    title: 'Rapport Annuel d’Activité 2024 de la CRSE',
-    subtitle: 'Bilan complet des missions de régulation, état du marché et perspectives énergétiques au Sénégal.',
-    category: 'rapports',
-    subcategory: 'rapports-annuels',
-    date: '08/01/2025',
-    fileSize: '6.5 Mo',
-    format: 'PDF',
-    previewText: `RAPPORT D’ACTIVITE 2024 - LA REGULATION AU SERVICE DE LA TRANSITION ENERGETIQUE\nMot du Président Ibrahima Niane\nChapitre 1 : Faits saillants de l'exercice\nChapitre 2 : Régulation du secteur de l'électricité (Senelec, IPP, concessionnaires ruraux)\nChapitre 3 : Structuration du secteur aval des hydrocarbures\nChapitre 4 : Préparation de la valorisation du gaz local (Projet GTA et Yakaar-Teranga)\nChapitre 5 : Protection des usagers et traitement des réclamations.`,
-    downloadUrl: '#',
-  },
-]
+const EMPTY_TERMS: WPDocumentTerm[] = []
+
+function getGroupForSlug(slug: string): CategoryGroup {
+  return categoryGroups.find((group) => group.slugs.includes(slug))
+    ?? categoryGroups.find((group) => group.id === 'autres')!
+}
+
+function getGroupFromQuery(cats: string | null, subcategory: string | null, types: WPDocumentTerm[]): CategoryGroup | null {
+  if (!cats) return null
+  const normalized = cats.toLocaleLowerCase('fr')
+  const ids = normalized.split(',').map((value) => value.trim())
+  if (ids.includes('decisions-avis') || ids.includes('decisions-et-avis')) {
+    return categoryGroups.find((group) => group.id === 'decisions-avis')!
+  }
+
+  const exact = categoryGroups.find((group) => group.id === normalized)
+  if (exact) return exact
+
+  const typeSlug = subcategory
+    || types.find((type) => ids.includes(type.slug))?.slug
+    || (ids.includes('hydrocarbures') ? 'structures-des-prix-des-hydrocarbures' : ids[0])
+  return getGroupForSlug(typeSlug)
+}
+
+function termsForGroup(group: CategoryGroup | null, types: WPDocumentTerm[]): WPDocumentTerm[] {
+  if (!group) return types
+  if (group.id === 'autres') {
+    const knownSlugs = categoryGroups.flatMap((item) => item.slugs)
+    return types.filter((type) => !knownSlugs.includes(type.slug))
+  }
+  return types.filter((type) => group.slugs.includes(type.slug))
+}
+
+function getDocumentTerms(document: WPDocument): WPDocumentTerm[] {
+  return document.types ?? []
+}
 
 export function DocumentsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [search, setSearch] = useState('')
-  const [activeCategories, setActiveCategories] = useState<string[]>([])
-  const [activeSectors, setActiveSectors] = useState<SectorId[]>([])
-  const [activeYear, setActiveYear] = useState('all')
-  const [previewDoc, setPreviewDoc] = useState<DocItem | null>(null)
-  const { documents: wpDocuments, loading, error } = useWPDocuments()
+  const { catalog, loading: catalogLoading, error: catalogError } = useWPDocumentCatalog()
+  const [searchDraft, setSearchDraft] = useState(searchParams.get('q') ?? '')
+  const [previewDoc, setPreviewDoc] = useState<WPDocument | null>(null)
 
-  // Lecture des paramètres d'URL (ex: ?cats=textes-legislatifs-et-reglementaires ou ?cats=grilles ou ?cats=grilles-tarifaires)
-  useEffect(() => {
-    const catsParam = searchParams.get('cats') || searchParams.get('cat')
-    const sectorParam = searchParams.get('secteur') || searchParams.get('sector')
-    const yearParam = searchParams.get('annee') || searchParams.get('year')
-    const qParam = searchParams.get('q')
+  const types = catalog?.types ?? EMPTY_TERMS
+  const sectors = catalog?.secteurs ?? EMPTY_TERMS
+  const group = getGroupFromQuery(searchParams.get('cats') || searchParams.get('cat'), searchParams.get('subcat'), types)
+  const selectedSubcategory = searchParams.get('subcat') ?? ''
+  const selectedSector = searchParams.get('secteur') || searchParams.get('sector') || ''
+  const sectorSlug = sectorAliases[selectedSector] ?? selectedSector
+  const query = searchParams.get('q') ?? ''
+  const requestedPage = Number.parseInt(searchParams.get('page') ?? '1', 10)
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1
+  const showCategories = !group && !sectorSlug && !query
+  const groupTerms = useMemo(() => termsForGroup(group, types), [group, types])
+  const queryCategories = selectedSubcategory
+    ? [selectedSubcategory]
+    : group
+      ? groupTerms.map((term) => term.slug)
+      : []
 
-    setSearch(qParam ?? '')
-    setActiveYear(yearParam ?? 'all')
-    const sectors = (sectorParam ?? '').split(',').filter((id): id is SectorId =>
-      id === 'electricite' || id === 'hydrocarbures' || id === 'gaz'
-    )
-    setActiveSectors([...new Set(sectors)])
-
-    if (catsParam) {
-      const categoryIds = catsParam.split(',').flatMap((value) => {
-        const lower = value.toLowerCase()
-        if (lower === 'decisions-avis' || lower === 'decisions-et-avis') return ['decisions', 'avis']
-        if (lower.includes('avis')) return ['avis']
-        if (lower.includes('decision')) return ['decisions']
-        if (lower.includes('texte') || lower.includes('loi')) return ['textes']
-        if (lower.includes('grille') || lower.includes('tarif')) return ['grilles']
-        if (lower.includes('hydrocarbure') || lower.includes('prix')) return ['hydrocarbures']
-        if (lower.includes('bulletin')) return ['bulletins']
-        if (lower.includes('consultation')) return ['consultations']
-        if (lower.includes('rapport')) return ['rapports']
-        return [lower]
-      }).filter((id) => id !== 'all' && mainCategories.some((category) => category.id === id))
-      setActiveCategories([...new Set(categoryIds)])
-    } else {
-      setActiveCategories([])
-    }
-
-  }, [searchParams])
-
-  const wpDocumentItems: DocItem[] = wpDocuments.map((item) => ({
-    id: item.id,
-    title: stripHtml(item.title.rendered),
-    subtitle: stripHtml(item.excerpt?.rendered ?? item.content?.rendered ?? ''),
-    category: getWPDocumentCategory(item) as DocumentCategoryId,
-    subcategory: '',
-    date: new Date(item.date).toLocaleDateString('fr-FR'),
-    fileSize: '',
-    format: 'Publication CRSE',
-    previewText: stripHtml(item.content?.rendered ?? item.excerpt?.rendered ?? ''),
-    downloadUrl: item.link,
-    sourceUrl: item.link,
-    sector: getWPDocumentSector(item),
-  }))
-  const availableYears = [...new Set(wpDocumentItems.map((item) => item.date.slice(-4)))].sort((left, right) => right.localeCompare(left))
-  const sectors: Array<{ id: SectorId; label: string }> = [
-    { id: 'electricite', label: 'Électricité' },
-    { id: 'hydrocarbures', label: 'Hydrocarbures' },
-    { id: 'gaz', label: 'Gaz' },
-  ]
-
-  const handleSelectCategory = (categoryId: string) => {
-    const nextCategories = categoryId === 'all'
-      ? []
-      : activeCategories.includes(categoryId)
-        ? activeCategories.filter((id) => id !== categoryId)
-        : [...activeCategories, categoryId]
-    setActiveCategories(nextCategories)
-    const params: Record<string, string> = {}
-    if (nextCategories.length) params.cats = nextCategories.join(',')
-    if (activeSectors.length) params.secteur = activeSectors.join(',')
-    if (activeYear !== 'all') params.annee = activeYear
-    if (search) params.q = search
-    setSearchParams(params)
-  }
-
-  const toggleSector = (sectorId: SectorId) => {
-    const nextSectors = activeSectors.includes(sectorId)
-      ? activeSectors.filter((sector) => sector !== sectorId)
-      : [...activeSectors, sectorId]
-    setActiveSectors(nextSectors)
-    const params: Record<string, string> = {}
-    if (activeCategories.length) params.cats = activeCategories.join(',')
-    if (nextSectors.length) params.secteur = nextSectors.join(',')
-    if (activeYear !== 'all') params.annee = activeYear
-    if (search) params.q = search
-    setSearchParams(params)
-  }
-
-  const setYear = (year: string) => {
-    setActiveYear(year)
-    const params: Record<string, string> = {}
-    if (activeCategories.length) params.cats = activeCategories.join(',')
-    if (activeSectors.length) params.secteur = activeSectors.join(',')
-    if (year !== 'all') params.annee = year
-    if (search) params.q = search
-    setSearchParams(params)
-  }
-
-  const filteredDocs = wpDocumentItems.filter((doc) => {
-    const matchesCat = activeCategories.length === 0 || activeCategories.includes(doc.category)
-    const matchesSector = activeSectors.length === 0 || (doc.sector != null && activeSectors.includes(doc.sector))
-    const matchesYear = activeYear === 'all' || doc.date.slice(-4) === activeYear
-    const q = search.toLowerCase().trim()
-    const matchesSearch =
-      !q ||
-      doc.title.toLowerCase().includes(q) ||
-      doc.subtitle.toLowerCase().includes(q) ||
-      doc.previewText.toLowerCase().includes(q)
-
-    return matchesCat && matchesSector && matchesYear && matchesSearch
-  }).sort((left, right) => {
-    const [leftDay, leftMonth, leftYear] = left.date.split('/').map(Number)
-    const [rightDay, rightMonth, rightYear] = right.date.split('/').map(Number)
-    return new Date(rightYear, rightMonth - 1, rightDay).getTime() - new Date(leftYear, leftMonth - 1, leftDay).getTime()
+  const { documents, total, totalPages, loading, error } = useWPDocumentPage({
+    page,
+    perPage: 10,
+    categories: queryCategories,
+    sector: sectorSlug,
+    search: query,
   })
+
+  const countsBySlug = useMemo(() => new Map(types.map((type) => [type.slug, type.count ?? 0])), [types])
+  const availableGroups = categoryGroups
+    .map((category) => ({
+      ...category,
+      terms: termsForGroup(category, types),
+    }))
+    .filter((category) => category.terms.length > 0)
+
+  const updateParams = (updates: Record<string, string | null>) => {
+    const next = new URLSearchParams(searchParams)
+    const legacyCategory = next.get('cat')
+    const legacySector = next.get('sector')
+    if (!next.has('cats') && legacyCategory) next.set('cats', legacyCategory)
+    if (!next.has('secteur') && legacySector) next.set('secteur', legacySector)
+    for (const [key, value] of Object.entries(updates)) {
+      if (value) next.set(key, value)
+      else next.delete(key)
+    }
+    next.delete('cat')
+    next.delete('sector')
+    next.set('page', '1')
+    if (next.get('page') === '1') next.delete('page')
+    setSearchParams(next)
+  }
+
+  const selectGroup = (selected: CategoryGroup) => {
+    const next = new URLSearchParams()
+    next.set('cats', selected.id)
+    if (selectedSector) next.set('secteur', selectedSector)
+    setSearchParams(next)
+  }
+
+  const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    updateParams({ q: searchDraft.trim() || null })
+  }
+
+  const filterDocuments = (documents: WPDocument[]) => documents.map((document) => ({
+    document,
+    title: stripHtml(document.title.rendered),
+    description: stripHtml(document.excerpt?.rendered ?? document.content?.rendered ?? ''),
+    categoryLabel: getDocumentTerms(document).map((term) => term.name).join(', '),
+    sectorLabel: document.secteurs?.map((sector) => stripHtml(sector.name)).join(', ') ?? '',
+    pdfUrl: document.pdf_url ?? document.file_url ?? null,
+  }))
+
+  const documentItems = filterDocuments(documents)
+  const pageTitle = group?.label
+    ?? (sectorSlug ? sectors.find((sector) => sector.slug === sectorSlug)?.name ?? 'Documents du secteur' : 'Résultats de recherche')
 
   return (
     <>
       <PageBanner
-        eyebrow="Ressources Officielles"
+        eyebrow="Ressources officielles"
         title="Textes & Documents"
-        description="Consultez, visualisez en ligne ou téléchargez l’ensemble des textes législatifs, décisions de commission, grilles tarifaires, bulletins officiels et rapports de la CRSE."
+        description="Parcourez les documents publiés par la CRSE, filtrez-les par catégorie et secteur, puis consultez ou téléchargez les PDF."
       />
 
       <main className="mx-auto w-full max-w-[1440px] px-6 py-12 lg:px-12">
-        {/* Barre de recherche */}
-        <div className="relative mb-8 max-w-[850px]">
-          <div className="flex items-center rounded-xl border border-slate-200 bg-white p-2 shadow-sm focus-within:border-chathams-blue focus-within:ring-2 focus-within:ring-chathams-blue/10">
-            <Search className="ml-3 text-slate-400" size={20} aria-hidden="true" />
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => {
-                const value = event.target.value
-                setSearch(value)
-                const params: Record<string, string> = {}
-                if (activeCategories.length) params.cats = activeCategories.join(',')
-                if (activeSectors.length) params.secteur = activeSectors.join(',')
-                if (activeYear !== 'all') params.annee = activeYear
-                if (value) params.q = value
-                setSearchParams(params, { replace: true })
-              }}
-              placeholder="Rechercher par mot-clé, numéro de loi, délibération, tarif..."
-              className="w-full bg-transparent px-4 py-2 text-[16px] text-slate-800 placeholder-slate-400 focus:outline-none"
-              aria-label="Rechercher un document"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearch('')
-                  const params: Record<string, string> = {}
-                  if (activeCategories.length) params.cats = activeCategories.join(',')
-                  if (activeSectors.length) params.secteur = activeSectors.join(',')
-                  if (activeYear !== 'all') params.annee = activeYear
-                  setSearchParams(params, { replace: true })
-                }}
-                className="mr-2 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                aria-label="Effacer la recherche"
+        {catalogError && (
+          <div role="alert" className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+            L’API des catégories CRSE n’a pas répondu : {catalogError}
+          </div>
+        )}
+
+        <form onSubmit={submitSearch} className="mb-8 flex max-w-3xl items-center gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+          <Search size={19} className="ml-2 shrink-0 text-slate-400" />
+          <input
+            value={searchDraft}
+            onChange={(event) => setSearchDraft(event.target.value)}
+            placeholder="Rechercher un document ou un numéro…"
+            aria-label="Rechercher un document ou un numéro"
+            className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm text-slate-800 outline-none"
+          />
+          <Button type="submit" className="rounded-lg bg-chathams-blue text-white">Rechercher</Button>
+        </form>
+
+        {showCategories ? (
+          <section aria-labelledby="document-categories-title">
+            <div className="mb-7">
+              <h2 id="document-categories-title" className="text-2xl font-bold text-chathams-blue sm:text-3xl">Catégories de documents</h2>
+              <p className="mt-2 text-sm text-slate-600">Choisissez une catégorie, puis une sous-catégorie pour filtrer les publications officielles.</p>
+            </div>
+            {catalogLoading ? (
+              <p className="mb-5 flex items-center gap-2 text-sm text-slate-500"><LoaderCircle size={18} className="animate-spin" />Chargement des catégories depuis crse.sn…</p>
+            ) : null}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {availableGroups.map((category) => {
+                const Icon = category.icon
+                const count = category.terms.reduce((sum, term) => sum + (countsBySlug.get(term.slug) ?? 0), 0)
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => selectGroup(category)}
+                    className="group flex min-h-44 flex-col rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:border-shakespeare/60 hover:shadow-md"
+                  >
+                    <span className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: `${category.color}14`, color: category.color }}>
+                      <Icon size={23} />
+                    </span>
+                    <span className="font-bold leading-snug text-chathams-blue group-hover:text-shakespeare">{category.label}</span>
+                    <span className="mt-auto pt-3 text-sm text-slate-500">{count} document{count === 1 ? '' : 's'}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <div className="mt-9 max-w-sm">
+              <label htmlFor="all-documents-sector" className="mb-2 block text-sm font-semibold text-slate-700">Filtrer tous les documents par secteur</label>
+              <select
+                id="all-documents-sector"
+                value={selectedSector}
+                onChange={(event) => updateParams({ secteur: event.target.value || null })}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700"
               >
-                <X size={18} />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Filtres par grandes catégories */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3 text-[14px] font-semibold text-slate-600">
-            <Filter size={15} />
-            <span>Catégories (sélection multiple) :</span>
-          </div>
-          <div className="flex flex-wrap gap-2.5">
-            {mainCategories.map((cat) => {
-              const Icon = cat.icon
-              const isSelected = cat.id === 'all' ? activeCategories.length === 0 : activeCategories.includes(cat.id)
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => handleSelectCategory(cat.id)}
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[14px] font-medium transition-all ${
-                    isSelected
-                      ? 'bg-chathams-blue text-white shadow-sm ring-2 ring-chathams-blue/20'
-                      : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                  }`}
-                  aria-pressed={isSelected}
-                >
-                  <Icon size={15} />
-                  <span>{cat.label}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="mb-6 grid gap-6 border-b border-slate-200 pb-6 md:grid-cols-2">
-          <fieldset>
-            <legend className="mb-3 flex items-center gap-2 text-[14px] font-semibold text-slate-600"><Filter size={15} />Secteurs concernés</legend>
-            <div className="flex flex-wrap gap-2">
-              {sectors.map((sector) => (
-                <label key={sector.id} className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-[13px] font-medium ${activeSectors.includes(sector.id) ? 'border-chathams-blue bg-chathams-blue text-white' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>
-                  <input type="checkbox" checked={activeSectors.includes(sector.id)} onChange={() => toggleSector(sector.id)} className="h-4 w-4 accent-[#1b3e80]" />
-                  {sector.label}
-                </label>
-              ))}
+                <option value="">Tous les secteurs</option>
+                {sectors.map((sector) => <option key={sector.slug} value={sector.slug}>{stripHtml(sector.name)}</option>)}
+              </select>
             </div>
-          </fieldset>
-          <div>
-            <label htmlFor="documents-year" className="mb-3 flex items-center gap-2 text-[14px] font-semibold text-slate-600"><CalendarDays size={15} />Année de publication</label>
-            <select id="documents-year" value={activeYear} onChange={(event) => setYear(event.target.value)} className="w-full max-w-[260px] rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[14px] text-slate-700">
-              <option value="all">Toutes les années</option>
-              {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
-            </select>
-          </div>
-        </div>
-
-        {/* Compteur de résultats */}
-        <div className="mb-6 flex items-center justify-between text-[14px] text-slate-500 border-b border-slate-200 pb-3">
-          <span>
-            <strong>{filteredDocs.length}</strong> document{filteredDocs.length > 1 ? 's' : ''} trouvé{filteredDocs.length > 1 ? 's' : ''}
-            {search && ` pour « ${search} »`}
-          </span>
-          {(activeCategories.length > 0 || activeSectors.length > 0 || activeYear !== 'all' || search) && (
-            <button
-              type="button"
-              onClick={() => {
-                setActiveCategories([])
-                setActiveSectors([])
-                setActiveYear('all')
-                setSearch('')
-                setSearchParams({})
-              }}
-              className="text-[13px] text-shakespeare hover:underline font-medium"
-            >
-              Réinitialiser tous les filtres
-            </button>
-          )}
-        </div>
-
-        {/* Grille des documents avec actions Visualiser & Télécharger */}
-        {loading ? (
-          <div className="flex items-center justify-center gap-3 py-16 text-slate-500"><LoaderCircle size={20} className="animate-spin" />Chargement des documents officiels…</div>
-        ) : error ? (
-          <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-[14px] text-amber-900">Les documents CRSE ne sont pas disponibles actuellement. Réessayez dans quelques instants.</div>
-        ) : filteredDocs.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredDocs.map((doc) => {
-              const catObj = mainCategories.find((c) => c.id === doc.category)
-              const Icon = catObj?.icon ?? FileText
-              const color = catObj?.color ?? '#1b3e80'
-
-              return (
-                <div
-                  key={doc.id}
-                  className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-shakespeare/60 hover:shadow-md"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span
-                        className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-semibold"
-                        style={{ background: `${color}14`, color }}
-                      >
-                        <Icon size={14} />
-                        {catObj?.label.split(' ')[0]}
-                      </span>
-                      <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
-                        {doc.format}
-                      </span>
-                    </div>
-
-                    <h3 className="text-[17px] font-bold leading-snug text-chathams-blue line-clamp-2">
-                      {doc.title}
-                    </h3>
-                    <p className="mt-2 text-[14px] text-slate-600 leading-relaxed line-clamp-3">
-                      {doc.subtitle}
-                    </p>
-                    {doc.sector && <p className="mt-3 text-[12px] font-semibold text-slate-500">Secteur : {sectors.find((sector) => sector.id === doc.sector)?.label}</p>}
-                  </div>
-
-                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <span className="text-[12px] text-slate-400 font-medium">
-                      Publié le {doc.date}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {doc.previewText && <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setPreviewDoc(doc)}
-                        className="h-8 gap-1 rounded-lg border-slate-300 px-3 text-[12px] font-semibold text-chathams-blue hover:bg-slate-50"
-                      >
-                        <Eye size={14} />
-                        <span>Visualiser</span>
-                      </Button>}
-                      <Button
-                        size="sm"
-                        asChild
-                        className="h-8 gap-1 rounded-lg bg-chathams-blue px-3 text-[12px] font-semibold text-white hover:bg-chathams-blue/90"
-                      >
-                        <a
-                          href={doc.sourceUrl ?? doc.downloadUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <ExternalLink size={14} />
-                          <span>Ouvrir la source CRSE</span>
-                        </a>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+          </section>
         ) : (
-          <div className="rounded-xl border border-dashed border-slate-300 p-12 text-center bg-slate-50">
-            <FileText className="mx-auto h-12 w-12 text-slate-400 mb-3" />
-            <h3 className="text-[18px] font-bold text-slate-700">Aucun document ne correspond à vos critères</h3>
-            <p className="mt-1 text-[14px] text-slate-500 max-w-md mx-auto">
-              Essayez de modifier votre recherche ou de sélectionner « Tous les documents ».
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setActiveCategories([])
-                setActiveSectors([])
-                setActiveYear('all')
-                setSearch('')
-                setSearchParams({})
-              }}
-              className="mt-4 rounded-full"
-            >
-              Réinitialiser les critères
-            </Button>
-          </div>
-        )}
-
-        {/* Modal de prévisualisation interactif */}
-        {previewDoc && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-fade-in"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="preview-modal-title"
-          >
-            <div className="relative flex max-h-[90vh] w-full max-w-[850px] flex-col rounded-2xl bg-white shadow-2xl overflow-hidden border border-slate-200">
-              {/* Header du modal */}
-              <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4">
-                <div className="flex items-center gap-3">
-                  <span className="rounded-lg bg-chathams-blue/10 p-2 text-chathams-blue">
-                    <FileText size={20} />
-                  </span>
-                  <div>
-                    <h3 id="preview-modal-title" className="text-[17px] font-bold text-chathams-blue leading-snug">
-                      {previewDoc.title}
-                    </h3>
-                    <p className="text-[12px] text-slate-500">
-                      Format : {previewDoc.format} • Taille : {previewDoc.fileSize} • Date : {previewDoc.date}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPreviewDoc(null)}
-                  className="rounded-full p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors"
-                  aria-label="Fermer la prévisualisation"
-                >
-                  <X size={20} />
+          <section aria-labelledby="document-results-title">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <button type="button" onClick={() => setSearchParams({})} className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-chathams-blue">
+                  <ArrowLeft size={15} /> Catégories
                 </button>
+                <h2 id="document-results-title" className="text-2xl font-bold text-chathams-blue">{pageTitle}</h2>
               </div>
-
-              {/* Contenu / Visualiseur intégré */}
-              <div className="flex-1 overflow-y-auto p-6 bg-slate-100 font-mono text-[13px] leading-relaxed text-slate-800">
-                <div className="mx-auto max-w-[700px] rounded-xl bg-white p-8 shadow-sm border border-slate-200">
-                  <div className="border-b border-slate-200 pb-4 mb-6 text-center">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
-                      Visualisation Officielle CRSE
-                    </span>
-                    <h4 className="font-sans text-[18px] font-bold text-chathams-blue">
-                      {previewDoc.title}
-                    </h4>
-                  </div>
-                  <pre className="whitespace-pre-wrap font-sans text-[14px] text-slate-700 leading-relaxed">
-                    {previewDoc.previewText}
-                  </pre>
-                  <div className="mt-8 rounded-lg bg-blue-50 p-4 border border-blue-100 text-[12px] text-blue-900 font-sans">
-                    <strong>Note :</strong> Ce document est un extrait certifié conforme publié au Journal Officiel ou dans les délibérations de la Commission de Régulation du Secteur de l’Énergie.
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer du modal avec téléchargement */}
-              <div className="flex items-center justify-between border-t border-slate-200 bg-white px-6 py-4">
-                <span className="text-[13px] text-slate-500">
-                  Document certifié CRSE
-                </span>
-                <div className="flex items-center gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setPreviewDoc(null)}
-                    className="rounded-full px-5 text-[14px]"
-                  >
-                    Fermer
-                  </Button>
-                  <Button
-                    type="button"
-                    className="gap-2 rounded-full bg-chathams-blue px-6 text-[14px] text-white hover:bg-chathams-blue/90"
-                    onClick={() => {
-                      const blob = new Blob([previewDoc.previewText], { type: 'text/plain;charset=utf-8' })
-                      const url = URL.createObjectURL(blob)
-                      const link = document.createElement('a')
-                      link.href = url
-                      link.download = `${previewDoc.title.slice(0, 30)}.txt`
-                      link.click()
-                      URL.revokeObjectURL(url)
-                    }}
-                  >
-                    <Download size={15} />
-                    <span>Télécharger la version complète</span>
-                  </Button>
-                </div>
-              </div>
+              <span className="text-sm text-slate-500">{total} document{total === 1 ? '' : 's'}</span>
             </div>
-          </div>
+
+            <div className="mb-7 grid gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
+              <label>
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Sous-catégorie</span>
+                <select
+                  value={selectedSubcategory}
+                  onChange={(event) => updateParams({ subcat: event.target.value || null })}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700"
+                >
+                  <option value="">Toutes les sous-catégories</option>
+                  {groupTerms.map((term) => <option key={term.slug} value={term.slug}>{term.name}</option>)}
+                </select>
+              </label>
+              <label>
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Secteur</span>
+                <select
+                  value={selectedSector}
+                  onChange={(event) => updateParams({ secteur: event.target.value || null })}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700"
+                >
+                  <option value="">Tous les secteurs</option>
+                  {sectors.map((sector) => <option key={sector.slug} value={sector.slug}>{stripHtml(sector.name)}</option>)}
+                </select>
+              </label>
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center gap-3 py-16 text-slate-500"><LoaderCircle size={20} className="animate-spin" />Chargement depuis l’API CRSE…</div>
+            ) : error ? (
+              <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">Erreur lors du chargement des documents : {error}</div>
+            ) : documentItems.length ? (
+              <>
+                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                  {documentItems.map(({ document, title, description, categoryLabel, sectorLabel, pdfUrl }) => (
+                    <article key={document.id} className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-shakespeare/60 hover:shadow-md">
+                      <div>
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          {categoryLabel && <span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-chathams-blue">{categoryLabel}</span>}
+                          {document.number && <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">N° {document.number}</span>}
+                        </div>
+                        <h3 className="line-clamp-3 text-base font-bold leading-snug text-chathams-blue">{title}</h3>
+                        {description && <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-slate-600">{description}</p>}
+                        {sectorLabel && <p className="mt-3 text-xs font-semibold text-slate-500">Secteur : {sectorLabel}</p>}
+                      </div>
+                      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                        <span className="text-xs text-slate-400">Publié le {formatWPDate(document.date)}</span>
+                        <div className="flex items-center gap-2">
+                          {pdfUrl ? (
+                            <>
+                              <Button type="button" size="sm" variant="outline" onClick={() => setPreviewDoc(document)} className="h-9 gap-1.5 rounded-lg px-3 text-xs font-semibold text-chathams-blue">
+                                <Eye size={14} /> Visualiser
+                              </Button>
+                              <a href={pdfUrl} target="_blank" rel="noopener noreferrer" download className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-chathams-blue px-3 text-xs font-semibold text-white hover:bg-chathams-blue/90">
+                                <Download size={14} /> PDF
+                              </a>
+                            </>
+                          ) : (
+                            <a href={document.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-chathams-blue hover:underline">
+                              Publication <ExternalLink size={14} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+                {totalPages > 1 && (
+                  <nav aria-label="Pagination des documents" className="mt-8 flex items-center justify-center gap-4">
+                    <Button type="button" variant="outline" disabled={page <= 1} onClick={() => updateParams({ page: String(page - 1) })} className="rounded-full">
+                      <ChevronLeft size={16} /> Précédent
+                    </Button>
+                    <span className="text-sm text-slate-600">Page {page} / {totalPages}</span>
+                    <Button type="button" variant="outline" disabled={page >= totalPages} onClick={() => updateParams({ page: String(page + 1) })} className="rounded-full">
+                      Suivant <ChevronRight size={16} />
+                    </Button>
+                  </nav>
+                )}
+              </>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center">
+                <FileText size={34} className="mx-auto text-slate-400" />
+                <p className="mt-4 font-semibold text-slate-700">Aucun document ne correspond à ces filtres.</p>
+              </div>
+            )}
+          </section>
         )}
-
-        {/* Lien de redirection vers le portail officiel */}
-        <div className="mt-16 flex items-center justify-between rounded-xl bg-slate-50 p-6 border border-slate-200">
-          <div className="flex items-center gap-3">
-            <ExternalLink className="text-shakespeare" size={20} />
-            <div>
-              <h4 className="text-[15px] font-bold text-chathams-blue">Portail d’archivage réglementaire</h4>
-              <p className="text-[13px] text-slate-600">
-                Vous recherchez une archive spécifique d'une délibération antérieure à 2020 ?
-              </p>
-            </div>
-          </div>
-          <Button asChild variant="outline" className="rounded-full border-chathams-blue text-chathams-blue hover:bg-chathams-blue hover:text-white">
-            <a href="https://crse.sn/documents" target="_blank" rel="noopener noreferrer">
-              Accéder aux archives externes
-            </a>
-          </Button>
-        </div>
       </main>
+
+      {previewDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-labelledby="preview-modal-title">
+          <div className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <header className="flex items-start justify-between gap-4 border-b border-slate-200 bg-slate-50 px-4 py-4 sm:px-6">
+              <div className="min-w-0">
+                <h2 id="preview-modal-title" className="line-clamp-2 font-bold text-chathams-blue">{stripHtml(previewDoc.title.rendered)}</h2>
+                <p className="mt-1 text-xs text-slate-500">Document officiel CRSE · PDF</p>
+              </div>
+              <button type="button" onClick={() => setPreviewDoc(null)} aria-label="Fermer la prévisualisation" className="shrink-0 rounded-full p-2 text-slate-500 hover:bg-slate-200"><X size={20} /></button>
+            </header>
+            <div className="min-h-[50vh] flex-1 bg-slate-100">
+              {previewDoc.pdf_url || previewDoc.file_url ? (
+                <iframe title={stripHtml(previewDoc.title.rendered)} src={previewDoc.pdf_url ?? previewDoc.file_url ?? undefined} className="h-[70vh] min-h-[50vh] w-full bg-white" />
+              ) : (
+                <div className="flex min-h-[50vh] items-center justify-center px-6 text-center text-slate-600">Aucun PDF n’est associé à ce document.</div>
+              )}
+            </div>
+            <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-4 sm:px-6">
+              <Button type="button" variant="outline" onClick={() => setPreviewDoc(null)} className="rounded-full">Fermer</Button>
+              {(previewDoc.pdf_url || previewDoc.download_url) && (
+                <a href={previewDoc.download_url ?? previewDoc.pdf_url ?? undefined} target="_blank" rel="noopener noreferrer" download className="inline-flex h-10 items-center gap-2 rounded-full bg-chathams-blue px-5 text-sm font-semibold text-white hover:bg-chathams-blue/90">
+                  <Download size={16} /> Télécharger le PDF
+                </a>
+              )}
+            </footer>
+          </div>
+        </div>
+      )}
     </>
   )
 }

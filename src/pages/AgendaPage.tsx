@@ -1,110 +1,106 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Calendar as CalendarIcon,
-  MapPin,
   Clock,
-  ArrowRight
+  LoaderCircle,
+  MapPin,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { PageBanner } from '../components/shared/PageBanner'
 import { Button } from '../components/ui/button'
+import { useWPAgenda } from '../hooks/useWordPress'
+import { formatWPDate, stripHtml } from '../lib/wordpress'
 
-type EventType = 'consultation' | 'audience' | 'formation' | 'reunion' | 'atelier'
+type EventStatus = 'a-venir' | 'en-cours' | 'passe'
+type EventFilter = 'all' | EventStatus
 
-interface EventItem {
-  id: number
-  title: string
-  type: EventType
-  typeLabel: string
-  date: string
-  time: string
-  location: string
-  status: 'a-venir' | 'en-cours' | 'passe'
-  statusLabel: string
-  description: string
-  link?: string
+function localDateString(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
-const eventsList: EventItem[] = [
-  {
-    id: 1,
-    title: 'Consultation Publique Nationale : Code de Réseau de Transport Gazier (RAG)',
-    type: 'consultation',
-    typeLabel: 'Consultation Publique',
-    date: '15 Mars 2025',
-    time: '09h00 – 16h30',
-    location: 'Hôtel King Fahd Palace, Dakar',
-    status: 'a-venir',
-    statusLabel: 'À venir',
-    description: 'Séance plénière de recueil des observations des industriels, producteurs indépendants et associations de consommateurs sur les principes tarifaires d’accès aux gazoducs nationaux.',
-  },
-  {
-    id: 2,
-    title: 'Atelier Régional de concertation sur la qualité de fourniture électrique',
-    type: 'atelier',
-    typeLabel: 'Atelier Régional',
-    date: '28 Mars 2025',
-    time: '10h00 – 15h00',
-    location: 'Gouvernance de Kaolack, Région de Kaolack',
-    status: 'a-venir',
-    statusLabel: 'À venir',
-    description: 'Échanges avec les associations d’usagers, chefs de quartier et opérateurs d’électrification rurale de la zone centre du Sénégal.',
-  },
-  {
-    id: 3,
-    title: 'Session annuelle du programme de formation en régulation de l’énergie (BADGE)',
-    type: 'formation',
-    typeLabel: 'Formation & Renforcement',
-    date: '09 Février 2025',
-    time: '08h30 – 17h00',
-    location: 'Centre de Conférence CRSE, Dakar',
-    status: 'passe',
-    statusLabel: 'Clôturé',
-    description: '8e édition de la session de perfectionnement des cadres de la régulation en partenariat avec les universités et instituts spécialisés.',
-  },
-  {
-    id: 4,
-    title: 'Audience foraine du Comité de Règlement des Différends (CRD)',
-    type: 'audience',
-    typeLabel: 'Audience Publique',
-    date: '12 Janvier 2025',
-    time: '09h30 – 14h00',
-    location: 'Chambre de Commerce de Saint-Louis',
-    status: 'passe',
-    statusLabel: 'Clôturé',
-    description: 'Examen public et conciliation contradictoire portant sur les litiges d’indemnisation suite à des perturbations sur les réseaux moyenne tension.',
-  },
-]
+function getEventType(title: string): string {
+  const normalizedTitle = title.toLocaleLowerCase('fr')
+  if (normalizedTitle.includes('consultation')) return 'Consultation publique'
+  if (normalizedTitle.includes('audience')) return 'Audience publique'
+  if (normalizedTitle.includes('formation')) return 'Formation'
+  if (normalizedTitle.includes('atelier')) return 'Atelier'
+  if (normalizedTitle.includes('réunion') || normalizedTitle.includes('reunion')) return 'Réunion'
+  return 'Événement CRSE'
+}
 
 export function AgendaPage() {
-  const [activeFilter, setActiveFilter] = useState<'all' | 'a-venir' | 'passe'>('all')
+  const [activeFilter, setActiveFilter] = useState<EventFilter>('all')
+  const { events, loading, error } = useWPAgenda()
+  const today = localDateString(new Date())
 
-  const filteredEvents = eventsList.filter((e) => {
+  const mappedEvents = useMemo(() => events.map((event) => {
+    const startDate = event.meta?.crse_event_start_date || event.date.slice(0, 10)
+    const endDate = event.meta?.crse_event_end_date || startDate
+    const status: EventStatus = startDate > today
+      ? 'a-venir'
+      : endDate >= today
+        ? 'en-cours'
+        : 'passe'
+    const title = stripHtml(event.title.rendered)
+    const dateLabel = startDate === endDate
+      ? formatWPDate(`${startDate}T12:00:00`)
+      : `${formatWPDate(`${startDate}T12:00:00`)} – ${formatWPDate(`${endDate}T12:00:00`)}`
+
+    return {
+      id: event.id,
+      slug: event.slug,
+      title,
+      typeLabel: getEventType(title),
+      startDate,
+      dateLabel,
+      dayLabel: new Date(`${startDate}T12:00:00`).toLocaleDateString('fr-FR', { day: '2-digit' }),
+      monthLabel: new Date(`${startDate}T12:00:00`).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+      location: event.meta?.crse_event_location?.trim() ?? '',
+      description: stripHtml(event.excerpt?.rendered ?? event.content?.rendered ?? ''),
+      status,
+    }
+  }).sort((left, right) => {
+    const leftIsPast = left.status === 'passe'
+    const rightIsPast = right.status === 'passe'
+    if (leftIsPast !== rightIsPast) return leftIsPast ? 1 : -1
+    return leftIsPast
+      ? right.startDate.localeCompare(left.startDate)
+      : left.startDate.localeCompare(right.startDate)
+  }), [events, today])
+
+  const filteredEvents = mappedEvents.filter((event) => {
     if (activeFilter === 'all') return true
-    return e.status === activeFilter
+    if (activeFilter === 'a-venir') return event.status === 'a-venir' || event.status === 'en-cours'
+    return event.status === 'passe'
   })
+
+  const tabs: Array<{ id: EventFilter; label: string }> = [
+    { id: 'all', label: 'Tous les événements' },
+    { id: 'a-venir', label: 'À venir' },
+    { id: 'passe', label: 'Événements passés' },
+  ]
 
   return (
     <>
       <PageBanner
         eyebrow="Événements & Rendez-vous"
         title="Agenda de la CRSE"
-        description="Retrouvez les prochaines consultations publiques, audiences foraines du comité de règlement des différends, ateliers régionaux et sessions d’information de la Commission."
+        description="Retrouvez les consultations publiques, audiences, ateliers et autres rendez-vous publiés par la Commission."
       />
 
       <main className="mx-auto w-full max-w-[1440px] px-6 py-14 lg:px-12">
-        {/* Filtres par statut */}
-        <div className="flex items-center justify-between border-b border-slate-200 pb-5 mb-10 flex-wrap gap-4">
-          <div className="flex gap-2">
-            {[
-              { id: 'all', label: 'Tous les événements' },
-              { id: 'a-venir', label: 'Événements à venir' },
-              { id: 'passe', label: 'Événements passés' },
-            ].map((tab) => (
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-5">
+          <div className="flex flex-wrap gap-2">
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveFilter(tab.id as any)}
-                className={`rounded-full px-5 py-2 text-[14px] font-semibold transition-all ${
+                onClick={() => setActiveFilter(tab.id)}
+                aria-pressed={activeFilter === tab.id}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition sm:px-5 ${
                   activeFilter === tab.id
                     ? 'bg-chathams-blue text-white shadow-sm'
                     : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
@@ -114,72 +110,75 @@ export function AgendaPage() {
               </button>
             ))}
           </div>
-
-          <span className="text-[13px] text-slate-500 font-medium">
-            <strong>{filteredEvents.length}</strong> rendez-vous répertorié{filteredEvents.length > 1 ? 's' : ''}
-          </span>
+          {!loading && !error && (
+            <span className="text-sm font-medium text-slate-500">
+              <strong>{filteredEvents.length}</strong> rendez-vous
+            </span>
+          )}
         </div>
 
-        {/* Liste des événements */}
-        <div className="space-y-6">
-          {filteredEvents.map((evt) => (
-            <div
-              key={evt.id}
-              className="flex flex-col md:flex-row items-start md:items-center justify-between rounded-2xl border border-slate-200 bg-white p-6 lg:p-8 shadow-sm hover:border-shakespeare/70 transition-all gap-6"
-            >
-              {/* Date Box */}
-              <div className="flex md:flex-col items-center justify-center rounded-xl bg-blue-50 px-5 py-4 text-center text-chathams-blue shrink-0 min-w-[130px] border border-blue-100">
-                <CalendarIcon size={22} className="mb-1 text-shakespeare" />
-                <span className="text-[18px] font-bold leading-tight mt-1">{evt.date.split(' ')[0]}</span>
-                <span className="text-[13px] font-medium text-slate-600 uppercase tracking-wider">{evt.date.split(' ').slice(1).join(' ')}</span>
-              </div>
-
-              {/* Détails de l'événement */}
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <span className="rounded-md bg-slate-100 px-2.5 py-0.5 text-[12px] font-bold text-chathams-blue uppercase tracking-wide">
-                    {evt.typeLabel}
-                  </span>
-                  <span
-                    className={`rounded-md px-2 py-0.5 text-[11px] font-bold uppercase ${
-                      evt.status === 'a-venir'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-slate-100 text-slate-500'
-                    }`}
-                  >
-                    {evt.statusLabel}
-                  </span>
-                </div>
-
-                <h3 className="text-[20px] font-bold text-chathams-blue mb-2 leading-snug">
-                  {evt.title}
-                </h3>
-                <p className="text-[14px] text-slate-600 leading-relaxed mb-3">
-                  {evt.description}
-                </p>
-
-                <div className="flex flex-wrap items-center gap-5 text-[13px] text-slate-500">
-                  <span className="flex items-center gap-1.5">
-                    <Clock size={14} className="text-slate-400" /> {evt.time}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <MapPin size={14} className="text-slate-400" /> {evt.location}
-                  </span>
-                </div>
-              </div>
-
-              {/* Action */}
-              <div className="shrink-0 self-end md:self-center">
-                <Button asChild variant="outline" className="rounded-full border-chathams-blue text-chathams-blue hover:bg-chathams-blue hover:text-white">
-                  <a href="/contact">
-                    <span>Participer / Informations</span>
-                    <ArrowRight size={14} className="ml-1.5" />
-                  </a>
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center gap-3 py-20 text-slate-500">
+            <LoaderCircle size={21} className="animate-spin" /> Chargement de l’agenda officiel…
+          </div>
+        ) : error ? (
+          <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+            L’agenda CRSE ne peut pas être chargé pour le moment. {error}
+          </div>
+        ) : filteredEvents.length ? (
+          <div className="space-y-5">
+            {filteredEvents.map((event) => {
+              const statusLabel = event.status === 'a-venir'
+                ? 'À venir'
+                : event.status === 'en-cours'
+                  ? 'En cours'
+                  : 'Passé'
+              return (
+                <article
+                  key={event.id}
+                  className="flex flex-col items-start gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-shakespeare/70 sm:p-7 md:flex-row md:items-center"
+                >
+                  <div className="flex min-w-[130px] shrink-0 items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-chathams-blue md:flex-col md:gap-1 md:px-5 md:py-4">
+                    <CalendarIcon size={21} className="shrink-0 text-shakespeare" />
+                    <span className="text-lg font-bold leading-tight md:mt-1">{event.dayLabel}</span>
+                    <span className="text-xs font-medium uppercase tracking-wider text-slate-600">{event.monthLabel}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-chathams-blue">{event.typeLabel}</span>
+                      <span className={`rounded-md px-2 py-1 text-[11px] font-bold uppercase ${event.status === 'a-venir' ? 'bg-green-100 text-green-800' : event.status === 'en-cours' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-500'}`}>
+                        {statusLabel}
+                      </span>
+                    </div>
+                    <h2 className="text-lg font-bold leading-snug text-chathams-blue sm:text-xl">{event.title}</h2>
+                    <p className="mt-1 text-sm font-medium text-slate-500">{event.dateLabel}</p>
+                    {event.description && <p className="mt-3 text-sm leading-relaxed text-slate-600">{event.description}</p>}
+                    {event.location && (
+                      <p className="mt-3 flex items-center gap-1.5 text-sm text-slate-500">
+                        <MapPin size={15} className="shrink-0 text-slate-400" /> {event.location}
+                      </p>
+                    )}
+                  </div>
+                  <div className="shrink-0 self-end md:self-center">
+                    <Button asChild variant="outline" className="rounded-full border-chathams-blue text-chathams-blue hover:bg-chathams-blue hover:text-white">
+                      <Link to={`/agenda/${event.slug}`}>
+                        <span>Voir le détail</span>
+                      </Link>
+                    </Button>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center">
+            <Clock size={32} className="mx-auto text-slate-400" />
+            <p className="mt-4 font-semibold text-slate-700">Aucun événement dans cette sélection.</p>
+            <button type="button" onClick={() => setActiveFilter('all')} className="mt-3 text-sm font-semibold text-chathams-blue hover:underline">
+              Afficher tous les événements
+            </button>
+          </div>
+        )}
       </main>
     </>
   )

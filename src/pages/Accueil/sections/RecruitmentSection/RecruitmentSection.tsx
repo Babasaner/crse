@@ -63,7 +63,7 @@ export const RecruitmentSection = (): JSX.Element => {
             </Link>
 
             <Link
-              to="/contact"
+              to="/recrutement"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-100 hover:bg-slate-200 px-6 py-4 text-[15px] font-semibold text-slate-700 transition-colors"
             >
               <UserPlus size={18} />

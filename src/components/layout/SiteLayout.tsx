@@ -34,7 +34,7 @@ export function SiteLayout() {
     <>
       <a className="skip-link" href="#contenu">Aller au contenu</a>
       <SiteHeader />
-      <main id="contenu"><Outlet /></main>
+      <main id="contenu" key={pathname} className="animate-page-enter"><Outlet /></main>
       <SiteFooter />
     </>
   )

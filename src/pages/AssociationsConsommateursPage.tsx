@@ -13,6 +13,7 @@ import {
   MessageSquare
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { PageBanner } from '../components/shared/PageBanner'
 
 interface Association {
   id: string
@@ -217,26 +218,12 @@ export function AssociationsConsommateursPage() {
 
   return (
     <div className="min-h-screen bg-slate-50/60">
-      {/* 1. HERO BANNER */}
-      <section className="relative flex min-h-[220px] sm:min-h-[280px] w-full items-center bg-chathams-blue">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-15"
-          style={{
-            backgroundImage: `url("https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=1920&q=80")`
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-chathams-blue via-chathams-blue/90 to-chathams-blue/75" />
-        <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 lg:px-12">
-          <div className="inline-block rounded-xl bg-white/10 px-8 py-3.5 shadow-xl backdrop-blur-md border border-white/20">
-            <h1 className="text-[26px] sm:text-[34px] font-extrabold tracking-wider text-white uppercase">
-              ASSOCIATIONS DE CONSOMMATEURS
-            </h1>
-          </div>
-          <p className="mt-4 max-w-2xl text-[15px] sm:text-[16px] text-blue-100 font-medium">
-            Liste et coordonnées des associations de consommateurs partenaires de la CRSE dans le cadre du dialogue permanent et du Comité Consultatif.
-          </p>
-        </div>
-      </section>
+      {/* 1. HERO BANNER UNIFORME AVEC BREADCRUMB */}
+      <PageBanner
+        eyebrow="Consommateurs"
+        title="Associations de Consommateurs"
+        description="Liste et coordonnées des associations de consommateurs partenaires de la CRSE dans le cadre du dialogue permanent et du Comité Consultatif."
+      />
 
       {/* 2. EN-TÊTE ET CADRE DE CONCERTATION */}
       <section className="py-12 bg-white border-b border-slate-200">

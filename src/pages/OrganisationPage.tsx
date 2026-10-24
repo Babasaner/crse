@@ -13,6 +13,7 @@ import {
   Layers,
   ArrowRight
 } from 'lucide-react'
+import { PageBanner } from '../components/shared/PageBanner'
 import { PurePdfFlipViewer } from '../components/shared/PurePdfFlipViewer'
 
 interface OrgNodeData {
@@ -203,26 +204,12 @@ export function OrganisationPage() {
 
   return (
     <div className="min-h-screen bg-slate-50/50">
-      {/* 1. HERO BANNER INSTITUTIONNELLE */}
-      <section className="relative flex min-h-[220px] sm:min-h-[280px] w-full items-center bg-chathams-blue">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-15"
-          style={{
-            backgroundImage: `url("https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1920&q=80")`
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-chathams-blue via-chathams-blue/90 to-chathams-blue/70" />
-        <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 lg:px-12">
-          <div className="inline-block rounded-xl bg-white/10 px-8 py-3.5 shadow-xl backdrop-blur-md border border-white/20">
-            <h1 className="text-[26px] sm:text-[34px] font-extrabold tracking-wider text-white uppercase">
-              ORGANISATION & GOUVERNANCE
-            </h1>
-          </div>
-          <p className="mt-4 max-w-2xl text-[15px] sm:text-[16px] text-blue-100 font-medium">
-            Découvrez la structure institutionnelle, les instances décisionnelles et les directions spécialisées de la Commission.
-          </p>
-        </div>
-      </section>
+      {/* 1. HERO BANNER UNIFORME AVEC BREADCRUMB */}
+      <PageBanner
+        eyebrow="Institution"
+        title="Organisation & Gouvernance"
+        description="Découvrez la structure institutionnelle, les instances décisionnelles et les directions spécialisées de la Commission."
+      />
 
       {/* 2. TEXTE OFFICIEL D'INTRODUCTION */}
       <section className="py-12 bg-white border-b border-slate-200">

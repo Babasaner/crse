@@ -18,7 +18,7 @@ const tools = [
   {
     title: 'Règlement des différends',
     description: "Mise en place d'un dispositif de règlement des différends portant sur les plaintes et recours déposés auprès de la CRSE.",
-    to: '/contact',
+    to: '/reclamations',
     icon: Scale,
   },
 ]

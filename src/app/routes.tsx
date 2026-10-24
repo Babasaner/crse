@@ -12,6 +12,7 @@ import { ContactPage } from '../pages/ContactPage'
 import { FaqPage } from '../pages/FaqPage'
 import { RecrutementPage } from '../pages/RecrutementPage'
 import { AgendaPage } from '../pages/AgendaPage'
+import { AgendaDetailPage } from '../pages/AgendaDetailPage'
 import { HubPage } from '../pages/HubPage'
 import { GuideConsommateurPage } from '../pages/GuideConsommateurPage'
 import { LivretInvestisseurPage } from '../pages/LivretInvestisseurPage'
@@ -23,6 +24,12 @@ import { SecteursPage } from '../pages/SecteursPage'
 import { SectorActorsPage } from '../pages/SectorActorsPage'
 import { OperateursMarchePage } from '../pages/OperateursMarchePage'
 import { QualityPolicyPage } from '../pages/QualityPolicyPage'
+import { AgencesPage } from '../pages/electricite/AgencesPage'
+import { OperateurHistoriquePage } from '../pages/electricite/OperateurHistoriquePage'
+import { AutoProducteursPage } from '../pages/electricite/AutoProducteursPage'
+import { ProducteursIndependantsPage } from '../pages/electricite/ProducteursIndependantsPage'
+import { ConcessionnairesRurauxPage } from '../pages/electricite/ConcessionnairesRurauxPage'
+import { ConcessionnairesDecentralisesPage } from '../pages/electricite/ConcessionnairesDecentralisesPage'
 import { pages } from '../data/pages'
 import { siteNavigation } from '../data/siteNavigation'
 import type { PageInfo } from '../types/page'
@@ -63,6 +70,7 @@ const customRoutes = [
   '/operateurs/livret-investisseur',
   '/documents',
   '/guide-du-consommateur',
+  '/consommateurs/guide',
   '/livret-de-linvestisseur',
   '/actualites',
   '/reclamations',
@@ -77,11 +85,22 @@ const customRoutes = [
   '/hydrocarbures',
   '/gaz',
   '/electricite/acteurs',
+  '/electricite/agences',
+  '/agences',
+  '/electricite/operateur-historique',
+  '/operateurs/senelec',
+  '/electricite/auto-producteurs',
+  '/operateurs/auto-producteurs',
+  '/electricite/producteurs-independants',
+  '/electricite/concessionnaires-ruraux',
+  '/electricite/concessionnaires-decentralises',
   '/hydrocarbures/acteurs',
   '/gaz/acteurs',
   '/consommateurs',
   '/operateurs',
   '/medias',
+  '/missions',
+  '/a-propos',
 ]
 
 const navigationPages: PageInfo[] = siteNavigation.flatMap((menu, menuIndex) =>
@@ -121,6 +140,15 @@ export function AppRoutes() {
           <Route path="/hydrocarbures" element={<SecteursPage secteur="hydrocarbures" />} />
           <Route path="/gaz" element={<SecteursPage secteur="gaz" />} />
           <Route path="/electricite/acteurs" element={<SectorActorsPage sector="electricite" />} />
+          <Route path="/electricite/agences" element={<AgencesPage />} />
+          <Route path="/agences" element={<AgencesPage />} />
+          <Route path="/electricite/operateur-historique" element={<OperateurHistoriquePage />} />
+          <Route path="/operateurs/senelec" element={<OperateurHistoriquePage />} />
+          <Route path="/electricite/auto-producteurs" element={<AutoProducteursPage />} />
+          <Route path="/operateurs/auto-producteurs" element={<AutoProducteursPage />} />
+          <Route path="/electricite/producteurs-independants" element={<ProducteursIndependantsPage />} />
+          <Route path="/electricite/concessionnaires-ruraux" element={<ConcessionnairesRurauxPage />} />
+          <Route path="/electricite/concessionnaires-decentralises" element={<ConcessionnairesDecentralisesPage />} />
           <Route path="/hydrocarbures/acteurs" element={<SectorActorsPage sector="hydrocarbures" />} />
           <Route path="/gaz/acteurs" element={<SectorActorsPage sector="gaz" />} />
           <Route path="/consommateurs" element={<HubPage hubKey="consommateurs" />} />
@@ -133,7 +161,11 @@ export function AppRoutes() {
           {/* Documents avec prévisualisation et téléchargement */}
           <Route path="/documents" element={<DocumentsPage />} />
           <Route path="/guide-du-consommateur" element={<GuideConsommateurPage />} />
+          <Route path="/consommateurs/guide" element={<GuideConsommateurPage />} />
           <Route path="/livret-de-linvestisseur" element={<LivretInvestisseurPage />} />
+          <Route path="/operateurs/livret-investisseur" element={<LivretInvestisseurPage />} />
+          <Route path="/missions" element={<PresentationPage />} />
+          <Route path="/a-propos" element={<PresentationPage />} />
 
           {/* Actualités : listing complet avec filtres et vue détaillée */}
           <Route path="/actualites" element={<NewsListingPage />} />
@@ -145,6 +177,7 @@ export function AppRoutes() {
           <Route path="/faq" element={<FaqPage />} />
           <Route path="/recrutement" element={<RecrutementPage />} />
           <Route path="/agenda" element={<AgendaPage />} />
+          <Route path="/agenda/:slug" element={<AgendaDetailPage />} />
 
           {/* Pages institutionnelles spécialisées */}
           <Route path="/mot-du-president" element={<MotDuPresidentPage />} />

@@ -20,9 +20,6 @@ export function ContentPage({ page }: { page: PageInfo }) {
   return (
     <>
       <PageBanner eyebrow={page.eyebrow} title={page.title} description={page.description} />
-      <div className="page-breadcrumb wrap" aria-label="Fil d’Ariane">
-        <Link to="/">Accueil</Link><ChevronRight size={14} aria-hidden="true" /><span>{page.title}</span>
-      </div>
 
       {isNewsPage ? <><NewsHeaderSection /><NewsHighlightsSection /></> : null}
 

@@ -1,9 +1,10 @@
 import { Link, useParams } from 'react-router-dom'
 import { useState } from 'react'
-import { ArrowLeft, CalendarDays, Check, ChevronRight, LoaderCircle, Share2 } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Check, LoaderCircle, Share2 } from 'lucide-react'
 import { useWPPost, useWPPosts } from '../hooks/useWordPress'
 import { formatWPDate, getPostCategories, getPostImage, stripHtml } from '../lib/wordpress'
 import { Button } from '../components/ui/button'
+import { Breadcrumb } from '../components/shared/Breadcrumb'
 
 const categoryLabels: Record<number, string> = {
   27: 'Aval & Intermédiaire gazier',
@@ -52,11 +53,15 @@ export function NewsDetailPage() {
 
   return (
     <article className="min-h-screen bg-white">
-      <div className="border-b border-slate-100 bg-slate-50/60 py-3">
-        <div className="mx-auto flex w-full max-w-[1200px] items-center gap-2 px-6 text-[13px] text-slate-500">
-          <Link to="/" className="hover:text-chathams-blue">Accueil</Link><ChevronRight size={13} />
-          <Link to="/actualites" className="hover:text-chathams-blue">Actualités</Link><ChevronRight size={13} />
-          <span className="max-w-[400px] truncate font-semibold text-chathams-blue">{stripHtml(post.title.rendered)}</span>
+      <div className="border-b border-[#e2e8f0] bg-[#f1f6fa] py-4">
+        <div className="mx-auto w-full max-w-[1200px] px-6">
+          <Breadcrumb
+            items={[
+              { label: 'Médias', to: '/medias' },
+              { label: 'Actualités', to: '/actualites' },
+              { label: stripHtml(post.title.rendered) }
+            ]}
+          />
         </div>
       </div>
 

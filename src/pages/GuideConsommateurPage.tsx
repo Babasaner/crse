@@ -1,19 +1,17 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Download, ShieldCheck, HelpCircle } from 'lucide-react'
 import { PageBanner } from '../components/shared/PageBanner'
-import { PurePdfFlipViewer } from '../components/shared/PurePdfFlipViewer'
 import { Button } from '../components/ui/button'
 
 export function GuideConsommateurPage() {
   const pdfUrl = "https://www.crse.sn/wp-content/uploads/2026/03/WEB-GuideConsommateur-VFF.pdf"
-  const coverImage = "https://www.crse.sn/wp-content/uploads/2026/03/Guide-du-consommateur.jpg"
 
   return (
     <>
       <PageBanner
         eyebrow="Publication Officielle"
         title="Guide du Consommateur d’Énergie"
-        description="Feuilletez le guide officiel interactif de la CRSE. Découvrez vos droits, le fonctionnement de vos compteurs et comment défendre vos intérêts face aux opérateurs."
+        description="Consultez le guide officiel de la CRSE pour découvrir vos droits, le fonctionnement de vos compteurs et les recours disponibles auprès des opérateurs."
       />
 
       <main className="mx-auto w-full max-w-[1440px] px-6 py-12 lg:px-12">
@@ -42,13 +40,13 @@ export function GuideConsommateurPage() {
           </div>
         </div>
 
-        {/* Visionneuse Flipbook pure */}
-        <PurePdfFlipViewer
-          title="Guide du Consommateur — CRSE Sénégal"
-          pdfUrl={pdfUrl}
-          coverImage={coverImage}
-          totalEstimatePages={28}
-        />
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <iframe
+            title="Guide du Consommateur — CRSE Sénégal"
+            src={pdfUrl}
+            className="h-[65vh] min-h-[420px] w-full sm:h-[80vh]"
+          />
+        </div>
 
         {/* Encadré d'assistance */}
         <div className="mt-14 rounded-2xl bg-slate-50 p-8 border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-6">

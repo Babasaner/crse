@@ -3,13 +3,15 @@ import { Button } from "../../../../components/ui/button";
 import { Link } from "react-router-dom";
 import { BookOpen, ArrowRight } from "lucide-react";
 
+type Sector = "electricite" | "hydrocarbures" | "gaz";
+
 const documentCategories = [
-  { label: "Textes législatifs et réglementaires", to: "/documents?cats=textes" },
-  { label: "Décisions et avis", to: "/documents?cats=decisions,avis" },
-  { label: "Grilles tarifaires et structures des prix", to: "/documents?cats=grilles,hydrocarbures" },
-  { label: "Bulletin officiel", to: "/documents?cats=bulletins" },
-  { label: "Consultations publiques", to: "/documents?cats=consultations" },
-  { label: "Rapports d'activité", to: "/documents?cats=rapports" },
+  { label: "Textes législatifs et réglementaires", categories: "textes" },
+  { label: "Décisions et avis", categories: "decisions,avis" },
+  { label: "Grilles tarifaires et structures des prix", categories: "grilles,hydrocarbures" },
+  { label: "Bulletin officiel", categories: "bulletins" },
+  { label: "Consultations publiques", categories: "consultations" },
+  { label: "Rapports d'activité", categories: "rapports" },
 ];
 
 const documentCards = [
@@ -33,7 +35,28 @@ const documentCards = [
   },
 ];
 
-export const DocumentsSection = (): ReactElement => {
+const sectorDocuments: Record<Sector, Array<{ title: string; description: string; categories: string; badge: string }>> = {
+  electricite: [
+    { title: "Décisions & avis", description: "Décisions de la CRSE et avis relatifs au secteur de l’électricité.", categories: "decisions,avis", badge: "Régulation" },
+    { title: "Grilles tarifaires", description: "Barèmes et décisions tarifaires applicables aux usagers et opérateurs électriques.", categories: "grilles", badge: "Tarification" },
+    { title: "Textes & rapports", description: "Cadre légal, rapports et études consacrés au secteur électrique.", categories: "textes,rapports", badge: "Références" },
+  ],
+  hydrocarbures: [
+    { title: "Décisions & avis", description: "Décisions et avis relatifs aux activités aval des hydrocarbures.", categories: "decisions,avis", badge: "Régulation" },
+    { title: "Structures des prix", description: "Structures de prix et barèmes officiels des produits pétroliers.", categories: "hydrocarbures", badge: "Tarification" },
+    { title: "Textes & rapports", description: "Cadre légal, rapports et études du secteur aval des hydrocarbures.", categories: "textes,rapports", badge: "Références" },
+  ],
+  gaz: [
+    { title: "Décisions & avis", description: "Décisions et avis relatifs aux segments aval et intermédiaire gaziers.", categories: "decisions,avis", badge: "Régulation" },
+    { title: "Grilles & tarifs", description: "Documents tarifaires disponibles pour les activités et infrastructures gazières.", categories: "grilles", badge: "Tarification" },
+    { title: "Textes & rapports", description: "Code gazier, textes d’application, rapports et études du secteur.", categories: "textes,rapports", badge: "Références" },
+  ],
+};
+
+export const DocumentsSection = ({ sector }: { sector?: Sector }): ReactElement => {
+  const sectorParam = sector ? `&secteur=${sector}` : "";
+  const allDocumentsUrl = sector ? `/documents?secteur=${sector}` : "/documents";
+
   return (
     <section className="crse-documents-section w-full bg-white py-20" aria-label="Publications de référence">
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-10 px-6 lg:px-12">
@@ -43,11 +66,11 @@ export const DocumentsSection = (): ReactElement => {
               Publications officielles
             </span>
             <h2 className="mt-1 text-[clamp(30px,3.2vw,42px)] font-bold text-chathams-blue">
-              Documents & Guides
+              {sector ? "Documents" : "Documents & Guides"}
             </h2>
           </div>
           <Link
-            to="/documents"
+            to={allDocumentsUrl}
             className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-chathams-blue hover:text-shakespeare transition-colors"
           >
             <span>Consulter tous les documents</span>
@@ -59,14 +82,14 @@ export const DocumentsSection = (): ReactElement => {
           {/* Menu des rubriques documentaires */}
           <aside className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
             <h3 className="text-[16px] font-bold text-chathams-blue mb-4 pb-3 border-b border-slate-200">
-              Bibliothèque réglementaire
+              {sector ? "Documents du secteur" : "Bibliothèque réglementaire"}
             </h3>
             <nav aria-label="Catégories de documents">
               <ul className="flex flex-col gap-2">
                 {documentCategories.map((category) => (
                   <li key={category.label}>
                     <Link
-                      to={category.to}
+                      to={`/documents?cats=${category.categories}${sectorParam}`}
                       className="flex items-center justify-between rounded-xl p-3 text-[14px] font-semibold text-slate-700 bg-white border border-slate-200/70 hover:border-chathams-blue hover:text-chathams-blue transition-all"
                     >
                       <span className="flex items-center gap-2.5">
@@ -84,7 +107,7 @@ export const DocumentsSection = (): ReactElement => {
               asChild
               className="mt-6 w-full rounded-full bg-chathams-blue text-white shadow-sm hover:bg-chathams-blue/90 font-semibold"
             >
-              <Link to="/documents">
+              <Link to={allDocumentsUrl}>
                 <span>Accéder à la bibliothèque complète</span>
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -92,8 +115,27 @@ export const DocumentsSection = (): ReactElement => {
           </aside>
 
           {/* Cartes interactives des 2 guides avec nouvelles images et redirection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {documentCards.map((doc) => (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            {sector
+              ? sectorDocuments[sector].map((doc) => (
+                <article
+                  key={doc.title}
+                  className="group flex min-h-56 flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-chathams-blue hover:shadow-xl"
+                >
+                  <div>
+                    <span className="rounded-md bg-shakespeare/15 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-shakespeare">{doc.badge}</span>
+                    <h3 className="mt-4 text-[21px] font-bold leading-snug text-chathams-blue group-hover:text-shakespeare">{doc.title}</h3>
+                    <p className="mt-2 text-[14px] leading-relaxed text-slate-600">{doc.description}</p>
+                  </div>
+                  <Link
+                    to={`/documents?cats=${doc.categories}&secteur=${sector}`}
+                    className="mt-5 inline-flex items-center gap-2 border-t border-slate-100 pt-4 text-sm font-bold text-chathams-blue hover:text-shakespeare"
+                  >
+                    Consulter les documents <ArrowRight size={15} />
+                  </Link>
+                </article>
+              ))
+              : documentCards.map((doc) => (
               <article
                 key={doc.title}
                 className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:border-chathams-blue hover:shadow-xl transition-all"
@@ -144,7 +186,7 @@ export const DocumentsSection = (): ReactElement => {
                   </a>
                 </div>
               </article>
-            ))}
+              ))}
           </div>
         </div>
       </div>

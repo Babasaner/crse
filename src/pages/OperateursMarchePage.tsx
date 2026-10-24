@@ -10,6 +10,7 @@ import {
   FileCheck,
   BookOpen
 } from 'lucide-react'
+import { PageBanner } from '../components/shared/PageBanner'
 
 interface Operator {
   id: string
@@ -191,26 +192,12 @@ export function OperateursMarchePage() {
 
   return (
     <div className="min-h-screen bg-slate-50/60">
-      {/* 1. HERO BANNER OPÉRATEURS */}
-      <section className="relative flex min-h-[220px] sm:min-h-[280px] w-full items-center bg-chathams-blue">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-15"
-          style={{
-            backgroundImage: `url("https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1920&q=80")`
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-chathams-blue via-chathams-blue/90 to-chathams-blue/75" />
-        <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 lg:px-12">
-          <div className="inline-block rounded-xl bg-white/10 px-8 py-3.5 shadow-xl backdrop-blur-md border border-white/20">
-            <h1 className="text-[26px] sm:text-[34px] font-extrabold tracking-wider text-white uppercase">
-              OPÉRATEURS SUR LE MARCHÉ
-            </h1>
-          </div>
-          <p className="mt-4 max-w-2xl text-[15px] sm:text-[16px] text-blue-100 font-medium">
-            Registre officiel des acteurs et opérateurs économiques régulés par la CRSE intervenant sur les segments de l’électricité, des hydrocarbures et du gaz.
-          </p>
-        </div>
-      </section>
+      {/* 1. HERO BANNER UNIFORME AVEC BREADCRUMB */}
+      <PageBanner
+        eyebrow="Opérateurs"
+        title="Opérateurs sur les Marchés"
+        description="Registre officiel des acteurs et opérateurs économiques régulés par la CRSE intervenant sur les segments de l’électricité, des hydrocarbures et du gaz."
+      />
 
       {/* 2. CADRE DE RÉGULATION & LIVRET DE L'INVESTISSEUR */}
       <section className="py-12 bg-white border-b border-slate-200">

@@ -1,19 +1,17 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Download, Briefcase, HelpCircle } from 'lucide-react'
 import { PageBanner } from '../components/shared/PageBanner'
-import { PurePdfFlipViewer } from '../components/shared/PurePdfFlipViewer'
 import { Button } from '../components/ui/button'
 
 export function LivretInvestisseurPage() {
   const pdfUrl = "https://www.crse.sn/wp-content/uploads/2026/03/WEB-LivretInvestisseur-VFF.pdf"
-  const coverImage = "https://www.crse.sn/wp-content/uploads/2026/03/livret-de-linvestisseur.jpg"
 
   return (
     <>
       <PageBanner
         eyebrow="Guide Économique & Réglementaire"
         title="Livret de l’Investisseur"
-        description="Feuilletez le livret officiel de la CRSE dédié aux investisseurs et opérateurs économiques. Découvrez le cadre juridique, les garanties et les opportunités énergétiques au Sénégal."
+        description="Consultez le livret officiel de la CRSE consacré au cadre juridique, aux garanties et aux opportunités énergétiques au Sénégal."
       />
 
       <main className="mx-auto w-full max-w-[1440px] px-6 py-12 lg:px-12">
@@ -42,13 +40,13 @@ export function LivretInvestisseurPage() {
           </div>
         </div>
 
-        {/* Visionneuse Flipbook pure */}
-        <PurePdfFlipViewer
-          title="Livret de l’Investisseur — CRSE Sénégal"
-          pdfUrl={pdfUrl}
-          coverImage={coverImage}
-          totalEstimatePages={32}
-        />
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <iframe
+            title="Livret de l’Investisseur — CRSE Sénégal"
+            src={pdfUrl}
+            className="h-[65vh] min-h-[420px] w-full sm:h-[80vh]"
+          />
+        </div>
 
         {/* Bloc d'aide investisseurs */}
         <div className="mt-14 rounded-2xl bg-slate-50 p-8 border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-6">

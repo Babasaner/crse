@@ -30,18 +30,19 @@ export const siteNavigation: SiteNavMenu[] = [
       { label: 'Électricité', items: [
         { label: 'Vue du secteur', to: '/electricite' },
         { label: 'Présentation des acteurs', to: '/electricite/acteurs' },
-        { label: 'Chiffres clés', to: '/electricite/chiffres-cles' },
+        { label: 'Chiffres clés', to: '/electricite#electricite-key-figures' },
         { label: 'Grilles tarifaires', to: '/electricite/grilles-tarifaires' },
       ] },
       { label: 'Aval des hydrocarbures', items: [
         { label: 'Vue du secteur', to: '/hydrocarbures' },
         { label: 'Présentation des acteurs', to: '/hydrocarbures/acteurs' },
-        { label: 'Chiffres clés', to: '/hydrocarbures/chiffres-cles' },
+        { label: 'Chiffres clés', to: '/hydrocarbures#hydrocarbon-key-figures' },
         { label: 'Structures des prix', to: '/hydrocarbures/structures-des-prix' },
       ] },
       { label: 'Aval et intermédiaire gaziers', items: [
         { label: 'Vue du secteur', to: '/gaz' },
         { label: 'Présentation des acteurs', to: '/gaz/acteurs' },
+        { label: 'Chiffres clés', to: '/gaz#gas-key-figures' },
       ] },
     ],
   },
@@ -86,5 +87,5 @@ export const utilityNavigation: SiteNavItem[] = [
   { label: 'Espace presse', to: '/actualites' },
   { label: 'Nous contacter', to: '/contact' },
   { label: 'Recrutement', to: '/recrutement' },
-  { label: 'FAQ', to: '/ressources' },
+  { label: 'FAQ', to: '/faq' },
 ]

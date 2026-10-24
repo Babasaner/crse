@@ -12,31 +12,23 @@ import {
   CheckCircle2,
   ArrowRight
 } from 'lucide-react'
+import { PageBanner } from '../components/shared/PageBanner'
 import { Button } from '../components/ui/button'
 
-const windBanner = 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?auto=format&fit=crop&w=1920&q=80'
-const refineryImg = 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1000&q=80'
-const electricImg = 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=800&q=80'
-const petrolImg = 'https://images.unsplash.com/photo-1542382257-80dedb725088?auto=format&fit=crop&w=800&q=80'
-const gasImg = 'https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80'
+const refineryImg = 'https://www.crse.sn/wp-content/uploads/2025/11/Usine-du-futur_0-scaled-1-2048x1365.jpg'
+const electricImg = 'https://www.crse.sn/wp-content/uploads/2025/11/Container.jpg'
+const petrolImg = 'https://www.crse.sn/wp-content/uploads/2025/11/Container-1.jpg'
+const gasImg = 'https://www.crse.sn/wp-content/uploads/2025/11/Container-2.jpg'
 
 export function PresentationPage() {
   return (
     <div className="min-h-screen bg-white">
-      {/* 1. HERO BANNER : Reproduction fidèle de la capture avec badge PRÉSENTATION */}
-      <section
-        className="relative flex min-h-[260px] sm:min-h-[320px] w-full items-center bg-cover bg-center"
-        style={{ backgroundImage: `url("${windBanner}")` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/40 to-transparent" />
-        <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 lg:px-12">
-          <div className="inline-block rounded-xl bg-chathams-blue/95 px-8 py-3.5 shadow-2xl backdrop-blur-md border border-white/20">
-            <h1 className="text-[26px] sm:text-[34px] font-extrabold tracking-wider text-white uppercase">
-              PRÉSENTATION
-            </h1>
-          </div>
-        </div>
-      </section>
+      {/* 1. HERO BANNER UNIFORME AVEC BREADCRUMB */}
+      <PageBanner
+        eyebrow="Institution"
+        title="Présentation de la CRSE"
+        description="Autorité administrative indépendante chargée de la régulation du secteur de l’électricité, du secteur aval des hydrocarbures et des segments aval et intermédiaire du gaz au Sénégal."
+      />
 
       {/* 2. SECTION CRÉATION DE LA CRSE */}
       <section className="py-16 sm:py-20">
@@ -219,11 +211,9 @@ export function PresentationPage() {
                 <img
                   src={electricImg}
                   alt="Secteur de l'électricité"
-                  className="h-full w-full object-cover hover:scale-105 transition-transform duration-500"
+                  className="h-full w-full object-cover object-right hover:scale-105 transition-transform duration-500"
                 />
-                <span className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-chathams-blue text-white shadow-md">
-                  <Zap size={18} />
-                </span>
+                
               </div>
               <div className="p-6 flex-1 flex flex-col justify-between">
                 <div>
@@ -246,11 +236,9 @@ export function PresentationPage() {
                 <img
                   src={petrolImg}
                   alt="Secteur aval des hydrocarbures"
-                  className="h-full w-full object-cover hover:scale-105 transition-transform duration-500"
+                  className="h-full w-full object-cover object-right hover:scale-105 transition-transform duration-500"
                 />
-                <span className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-[#da6830] text-white shadow-md">
-                  <Flame size={18} />
-                </span>
+                
               </div>
               <div className="p-6 flex-1 flex flex-col justify-between">
                 <div>
@@ -273,11 +261,9 @@ export function PresentationPage() {
                 <img
                   src={gasImg}
                   alt="Segments gaziers"
-                  className="h-full w-full object-cover hover:scale-105 transition-transform duration-500"
+                  className="h-full w-full object-cover object-right hover:scale-105 transition-transform duration-500"
                 />
-                <span className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-[#e38d19] text-white shadow-md">
-                  <Flame size={18} />
-                </span>
+                
               </div>
               <div className="p-6 flex-1 flex flex-col justify-between">
                 <div>
